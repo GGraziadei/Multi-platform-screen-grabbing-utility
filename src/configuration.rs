@@ -1,10 +1,13 @@
 use std::borrow::Borrow;
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter, Pointer};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Duration;
-use serde::{Deserialize, Serialize};
+use image::ImageFormat;
+use serde::{Deserialize, Serialize, Serializer};
 use serde::de::Unexpected::Str;
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
@@ -19,11 +22,56 @@ impl Default for AcquireMode{
     }
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone,PartialEq)]
+pub enum ImageFmt{
+    PNG,
+    JPG,
+    GIF
+}
+
+impl Default for ImageFmt{
+    fn default() -> Self {
+        ImageFmt::PNG
+    }
+}
+
+impl Display for ImageFmt{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageFmt::PNG => {write!(f, "PNG")}
+            ImageFmt::JPG => {write!(f, "JPEG")}
+            ImageFmt::GIF => {write!(f, "GIF")}
+        }
+
+    }
+}
+
+impl ImageFmt{
+
+    pub fn get_image_format(&self) -> Option<ImageFormat>
+    {
+        Some(match self{
+            ImageFmt::PNG => {ImageFormat::Png}
+            ImageFmt::JPG => {ImageFormat::Jpeg}
+            ImageFmt::GIF => {ImageFormat::Gif}
+        })
+    }
+
+    pub fn get_image_ext(&self) -> Option<String>
+    {
+        Some(match self{
+            ImageFmt::PNG => {".png".to_string()}
+            ImageFmt::JPG => {".jpeg".to_string()}
+            ImageFmt::GIF => {".gif".to_string()}
+        })
+    }
+}
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Configuration{
     app_name : RefCell<String>,
     save_path : RefCell<String>,
-    file_ext : RefCell<String>,
+    image_format : RefCell<ImageFmt>,
     coordinates : Cell<(usize, usize)>,
     height: Cell<usize>,
     width: Cell<usize>,
@@ -33,6 +81,7 @@ pub struct Configuration{
 
 const SETTINGS_FILE: &'static str = "settings.json";
 
+
 impl Configuration{
 
     /*
@@ -40,6 +89,7 @@ impl Configuration{
         altrimenti crea un file di configurazione di default e lo serializza
     */
     pub fn new() -> Self{
+
         match Self::read() {
             None => {
                 let c = Self::default();
@@ -53,7 +103,7 @@ impl Configuration{
     pub fn bulk(
         app_name : String,
         save_path : String,
-        file_ext : String,
+        image_format : ImageFmt,
         coordinates : (usize, usize),
         height: usize,
         width: usize,
@@ -64,7 +114,7 @@ impl Configuration{
         let c = Self{
             app_name: RefCell::new(app_name),
             save_path: RefCell::new(save_path),
-            file_ext: RefCell::new(file_ext),
+            image_format: RefCell::new(image_format),
             coordinates: Cell::new(coordinates),
             height: Cell::new(height),
             width: Cell::new(width),
@@ -98,14 +148,14 @@ impl Configuration{
         Some(true)
     }
 
-    pub fn get_file_ext(&self) -> Option<String> {
-        let s = self.file_ext.borrow().clone();
+    pub fn get_image_fmt(&self) -> Option<ImageFmt> {
+        let s = self.image_format.borrow().clone();
         Some(s)
     }
 
-    pub fn set_file_ext(&self , file_ext : String) -> Option<bool>
+    pub fn set_image_fmt(&self , image_format : ImageFmt) -> Option<bool>
     {
-        *self.file_ext.borrow_mut() =file_ext;
+        *self.image_format.borrow_mut() =image_format;
         self.write()?;
         Some(true)
     }

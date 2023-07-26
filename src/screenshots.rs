@@ -5,9 +5,29 @@ use std::thread::{JoinHandle, spawn};
 use std::time::Duration;
 use screenshots::{DisplayInfo, Image, Screen};
 
+pub struct CaptureArea{
+    x : i32,
+    y: i32,
+    width: u32,
+    height: u32
+}
+
+impl CaptureArea{
+    pub fn new(x : i32 ,y : i32,width : u32,height:u32) -> Option<Self>
+    {
+        Some(Self{
+            x,
+            y,
+            width,
+            height,
+        })
+    }
+}
+
 struct PrintData{
     delay : Option<Duration>,
-    di : DisplayInfo
+    di : DisplayInfo,
+    ca : Option<CaptureArea>
 }
 
 enum ScreenshotMessage {
@@ -45,7 +65,12 @@ impl ScreenshotExecutor{
                     if let ScreenshotMessage::Print( pd) = msg {
                         Self::thread_executor_delay(pd.delay);
                         let s = Screen::new(&pd.di);
-                        let img = s.capture().unwrap();
+                        let img = match pd.ca {
+                            None => {s.capture().unwrap()}
+                            Some(area) => {
+                                s.capture_area(area.x,area.y,area.width,area.height).unwrap()
+                            }
+                        } ;
                         let msg = ScreenshotMessage::Image(img);
                         match tx.send(msg)  {
                             Ok(()) => {}
@@ -83,7 +108,7 @@ impl ScreenshotExecutor{
         }
     }
 
-    pub fn screenshot(&self, di : DisplayInfo, delay : Option<Duration> ) -> Option<Image>
+    pub fn screenshot(&self, di : DisplayInfo, delay : Option<Duration>, area : Option<CaptureArea> ) -> Option<Image>
     {
 
         /*Each thread can have own sender. MSSR */
@@ -92,6 +117,7 @@ impl ScreenshotExecutor{
         let pd = PrintData{
             delay,
             di,
+            ca: area,
         };
 
         let m_send = ScreenshotMessage::Print(pd);
