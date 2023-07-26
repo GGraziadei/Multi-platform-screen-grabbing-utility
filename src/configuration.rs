@@ -27,7 +27,7 @@ pub struct Configuration{
     coordinates : Cell<(usize, usize)>,
     height: Cell<usize>,
     width: Cell<usize>,
-    delay: Cell<(bool, Duration)>,
+    delay: Cell<Option<Duration>>,
     acquire_mode : Cell<AcquireMode>
 }
 
@@ -57,7 +57,7 @@ impl Configuration{
         coordinates : (usize, usize),
         height: usize,
         width: usize,
-        delay: (bool, Duration),
+        delay: Option<Duration>,
         acquire_mode : AcquireMode
     ) -> Self
     {
@@ -158,12 +158,12 @@ impl Configuration{
         Some(true)
     }
 
-    pub fn get_delay(&self) -> Option<(bool, Duration)>
+    pub fn get_delay(&self) -> Option<Duration>
     {
-        Some(self.delay.get())
+        self.delay.get()
     }
 
-    pub fn set_delay(&self, delay : (bool, Duration) ) -> Option<bool>
+    pub fn set_delay(&self, delay : Option<Duration> ) -> Option<bool>
     {
         self.delay.set(delay);
         self.write()?;
