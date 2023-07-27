@@ -6,3 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+color-hex = "0.2.0"
+eframe = "0.22.0"
+egui = { features = ["color-hex"]}
+egui_extras = { features = ["image"] }
