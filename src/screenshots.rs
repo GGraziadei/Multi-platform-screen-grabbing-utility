@@ -36,13 +36,16 @@ enum ScreenshotMessage {
     Image(Image)
 }
 
-pub struct ScreenshotExecutor{
-    rx : Receiver<ScreenshotMessage>,
-    tx : SyncSender<ScreenshotMessage>,
-    thread : JoinHandle<usize>
+const REQUESTS: usize = 5;
+
+pub struct ScreenshotExecutorThread{
+    pub thread: JoinHandle<usize>
 }
 
-const REQUESTS: usize = 5;
+pub struct ScreenshotExecutor{
+    rx : Receiver<ScreenshotMessage>,
+    tx : SyncSender<ScreenshotMessage>
+}
 
 impl ScreenshotExecutor{
 
@@ -91,7 +94,7 @@ impl ScreenshotExecutor{
     }
 
 
-    pub fn new() -> Self
+    pub fn new() -> (Self, ScreenshotExecutorThread)
     {
         /*channel from ti to the thread screenshot executor*/
         let (tx, rx) = sync_channel::<ScreenshotMessage>(REQUESTS);
@@ -102,11 +105,12 @@ impl ScreenshotExecutor{
         /*thread executor*/
         let thread : JoinHandle<usize> = spawn(move || Self::thread_executor(tx_t, rx));
 
-        Self{
+        (Self{
             rx: rx_t,
-            tx,
-            thread
-        }
+            tx
+        }, ScreenshotExecutorThread{
+            thread,
+        })
     }
 
     pub fn screenshot(&self, di : DisplayInfo, delay : Option<Duration>, area : Option<CaptureArea> ) -> Option<Image>

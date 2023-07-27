@@ -14,6 +14,20 @@ use screenshots::Image;
 use crate::configuration::ImageFmt;
 use crate::configuration::ImageFmt::GIF;
 
+pub struct EncoderThread{
+    pub thread : JoinHandle<ImageResult<()>>,
+    image_name : String
+}
+
+impl EncoderThread{
+
+    pub fn get_image_name(&self) -> &String
+    {
+        &self.image_name
+    }
+
+}
+
 #[derive(Clone)]
 pub struct ImageFormatter {
     buffer : Vec<u8>,
@@ -96,7 +110,7 @@ impl ImageFormatter{
         }
     }
 
-    pub fn save_fmt(&self, path : String, fmt : ImageFmt ) -> JoinHandle<ImageResult<()>>
+    pub fn save_fmt(&self, path : String, fmt : ImageFmt ) -> EncoderThread
     {
 
         let mut p : String = (String::from(path));
@@ -109,9 +123,14 @@ impl ImageFormatter{
             p.clone() in facts we don't know the lifetime of the thread
         */
         let image_formatter = Self::clone(self);
-        spawn(move || {
-            Self::encoder_thread(image_formatter, p, image_format)
-        })
+        let image_name = p.clone();
+
+        EncoderThread{
+            thread: spawn(move || {
+                Self::encoder_thread(image_formatter, p.clone(), image_format)
+            }),
+            image_name,
+        }
 
     }
 
