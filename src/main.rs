@@ -1,10 +1,6 @@
-use std::fs;
-use std::fs::FileType;
-use std::time::Duration;
-use ::screenshots::{Compression, DisplayInfo, Screen};
-use arboard::{Clipboard, ImageData};
-use image::{ColorType, ImageFormat};
-use serde::de::Unexpected::Option;
+use ::screenshots::{DisplayInfo};
+use image::ImageResult;
+use log::warn;
 
 use crate::configuration::{Configuration, ImageFmt};
 use crate::image_formatter::ImageFormatter;
@@ -15,6 +11,9 @@ mod screenshots;
 mod image_formatter;
 
 fn main() {
+
+    env_logger::init();
+
     let c = Configuration::new();
     c.set_delay(None);
     c.set_image_fmt(ImageFmt::GIF);
@@ -29,8 +28,12 @@ fn main() {
     //fs::write(format!("target/screen_test.png"), buffer).unwrap();
     //image::save_buffer_with_format("target/test.png", image.rgba(), image.width(), image.height(), ColorType::Rgba8, c.get_image_fmt().unwrap().get_image_format().unwrap()).expect("TODO: panic message");
     let img_fmt = ImageFormatter::from(image);
-    img_fmt.save_fmt("target/test".to_string(), c.get_image_fmt().unwrap());
+    let t =  img_fmt.save_fmt("target/test".to_string(), c.get_image_fmt().unwrap());
+
+    warn!("New screen. non attendi la fine del precednete encoding");
+
 
     img_fmt.to_clipboard().unwrap();
 
+    t.join().unwrap();
 }

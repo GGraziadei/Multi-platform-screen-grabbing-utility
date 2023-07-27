@@ -3,6 +3,7 @@ use std::sync::mpsc::{Receiver, RecvError, SendError, sync_channel, SyncSender};
 use std::thread;
 use std::thread::{JoinHandle, spawn};
 use std::time::Duration;
+use log::info;
 use screenshots::{DisplayInfo, Image, Screen};
 
 pub struct CaptureArea{
@@ -50,7 +51,7 @@ impl ScreenshotExecutor{
         match pd {
             None => {}
             Some(duration) => {
-                println!("ScreenshotExecutor : delay {:?}", duration);
+                info!("ScreenshotExecutor : delay {:?}", duration);
                 thread::sleep(duration);
             }
         }
@@ -58,7 +59,7 @@ impl ScreenshotExecutor{
 
     fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>) -> usize
     {
-        println!("ScreenshotExecutor: thread_executor start");
+        info!("ScreenshotExecutor: thread_executor start");
         loop {
             match rx.recv(){
                 Ok(msg) => {
@@ -75,14 +76,14 @@ impl ScreenshotExecutor{
                         match tx.send(msg)  {
                             Ok(()) => {}
                             Err(e) => {
-                                println!("ScreenshotExecutor: thread_executor return.");
+                                info!("ScreenshotExecutor: thread_executor return.");
                                 return 1;
                             }
                         }
                     }
                 }
                 Err(e) => {
-                    println!("ScreenshotExecutor: thread_executor return.");
+                    info!("ScreenshotExecutor: thread_executor return.");
                     return 0;
                 }
             }
@@ -139,6 +140,6 @@ impl ScreenshotExecutor{
 impl Drop for ScreenshotExecutor{
     fn drop(&mut self) {
         /*when drop ScreenshotExecutor also the tx is dropped. This produce the return of the executor thread*/
-        println!("Drop: ScreenshotExecutor");
+        info!("Drop: ScreenshotExecutor");
     }
 }
