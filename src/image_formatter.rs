@@ -1,6 +1,7 @@
 use std::fmt::Error;
 use std::fs::File;
 use std::path::Path;
+use arboard::{Clipboard, ImageData};
 use image::{ColorType, Frame, ImageFormat, ImageResult};
 use image::ColorType::Rgba8;
 use image::ImageFormat::Png;
@@ -34,5 +35,15 @@ impl ImageFormatter{
         p.push_str(&fmt.get_image_ext()?);
 
         image::save_buffer_with_format(Path::new(&p),&self.buffer,self.width,self.height,self.color_type,Png).ok()
+    }
+
+    pub fn to_clipboard(&self) -> Result<(), arboard::Error>
+    {
+        let mut cb = Clipboard::new()?;
+        cb.set_image(ImageData {
+            width: self.width as usize,
+            height: self.height as usize,
+            bytes: (&self.buffer).into(),
+        })
     }
 }

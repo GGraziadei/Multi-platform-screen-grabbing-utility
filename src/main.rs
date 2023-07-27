@@ -2,6 +2,7 @@ use std::fs;
 use std::fs::FileType;
 use std::time::Duration;
 use ::screenshots::{Compression, DisplayInfo, Screen};
+use arboard::{Clipboard, ImageData};
 use image::{ColorType, ImageFormat};
 use serde::de::Unexpected::Option;
 
@@ -27,6 +28,9 @@ fn main() {
 
     //fs::write(format!("target/screen_test.png"), buffer).unwrap();
     //image::save_buffer_with_format("target/test.png", image.rgba(), image.width(), image.height(), ColorType::Rgba8, c.get_image_fmt().unwrap().get_image_format().unwrap()).expect("TODO: panic message");
-    ImageFormatter::from(image).save_fmt("target/test".to_string(), c.get_image_fmt().unwrap());
+    let img_fmt = ImageFormatter::from(image);
+    img_fmt.save_fmt("target/test".to_string(), c.get_image_fmt().unwrap());
+
+    img_fmt.to_clipboard().unwrap();
 
 }
