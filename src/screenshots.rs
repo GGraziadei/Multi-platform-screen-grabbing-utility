@@ -1,10 +1,11 @@
 use std::sync::{Condvar, Mutex};
 use std::sync::mpsc::{Receiver, RecvError, SendError, sync_channel, SyncSender};
 use std::thread;
-use std::thread::{JoinHandle, spawn};
+use std::thread::{Builder, JoinHandle, spawn};
 use std::time::Duration;
 use log::info;
 use screenshots::{DisplayInfo, Image, Screen};
+use thread_priority::{set_current_thread_priority, ThreadPriority};
 
 pub struct CaptureArea{
     x : i32,
@@ -62,6 +63,7 @@ impl ScreenshotExecutor{
 
     fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>) -> usize
     {
+        assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         info!("ScreenshotExecutor: thread_executor start");
         loop {
             match rx.recv(){

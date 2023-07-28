@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex, RwLock};
 use log::{error, info};
+use thread_priority::{set_current_thread_priority, ThreadPriority};
 use crate::configuration::Configuration;
 use crate::gui::GuiThread;
 use crate::image_formatter::EncoderThread;
@@ -16,6 +17,7 @@ impl ThreadManager{
 
     fn init() -> (Arc<RwLock<Configuration>>,Arc<Mutex<Vec<EncoderThread>>>)
     {
+        assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         env_logger::init();
         (Arc::new(RwLock::new(Configuration::new()))
             ,Arc::new(Mutex::new(Vec::<EncoderThread>::new())))
