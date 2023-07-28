@@ -1,38 +1,61 @@
+use std::sync::{Arc, Mutex, RwLock};
 use log::{error, info};
+use crate::configuration::Configuration;
+use crate::gui::GuiThread;
 use crate::image_formatter::EncoderThread;
 use crate::screenshots::{ScreenshotExecutor, ScreenshotExecutorThread};
 
 pub struct ThreadManager{
-    encoders: Vec<EncoderThread>,
-    screenshots_executor : ScreenshotExecutorThread
+    configuration : Arc<RwLock<Configuration>>,
+    encoders: Arc<Mutex<Vec<EncoderThread>>>,
+    screenshots_executor : ScreenshotExecutorThread,
+    gui_thread : GuiThread
 }
-
 
 impl ThreadManager{
 
-    pub fn new() -> (ScreenshotExecutor, Self)
+    fn init() -> (Arc<RwLock<Configuration>>,Arc<Mutex<Vec<EncoderThread>>>)
+    {
+        env_logger::init();
+        (Arc::new(RwLock::new(Configuration::new()))
+            ,Arc::new(Mutex::new(Vec::<EncoderThread>::new())))
+    }
+
+    pub fn new() -> Self
     {
 
-        let (s, executor_thread) = ScreenshotExecutor::new();
+        let (screenshot_executor,executor_thread) = ScreenshotExecutor::new();
+        let (configuration, encoders) = Self::init();
+
         let tm = ThreadManager{
-            encoders: vec![],
+            configuration : configuration.clone(),
+            encoders: encoders.clone(),
             screenshots_executor: executor_thread,
+            /*GuiThread is mapped over the main thread (ThreadManager)*/
+            gui_thread: GuiThread::new(configuration.clone(), encoders.clone(), screenshot_executor),
         };
 
-        (s,tm)
+        tm
     }
 
     pub fn add_encoder(&mut self, e : EncoderThread)
     {
-        self.encoders.push(e)
+        let mut encoders = self.encoders.lock()
+            .expect("Error in encoders access");
+        encoders.push(e)
     }
 
     pub fn join(self) -> ()
     {
-        let encoders = self.encoders;
-        let screenshots_executor = self.screenshots_executor;
+        let encoders = Arc::try_unwrap(self.encoders)
+            .expect("Error in encoders access").into_inner()
+            .expect("Error in encoders lock");
 
-        for e in encoders.into_iter(){
+        let screenshots_executor = self.screenshots_executor;
+        let gui_thread = self.gui_thread;
+
+        for e in encoders
+        {
             let encoder_result = e.thread.join()
                 .expect("Error during encoder join");
             match encoder_result {

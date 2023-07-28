@@ -11,6 +11,7 @@ use log::{info};
 use screenshots::Image;
 use crate::configuration::ImageFmt;
 
+#[derive(Debug)]
 pub struct EncoderThread{
     pub thread : JoinHandle<ImageResult<()>>,
     image_name : String
