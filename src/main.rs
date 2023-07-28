@@ -1,5 +1,5 @@
-use std::thread::JoinHandle;
 use ::screenshots::{DisplayInfo};
+use egui::{Key, ScrollArea};
 use image::ImageResult;
 use log::{error, warn};
 
@@ -13,6 +13,39 @@ mod screenshots;
 mod image_formatter;
 mod thread_manager;
 
+
+#[derive(Default)]
+struct Content {
+    text: String,
+}
+
+impl eframe::App for Content {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Press/Hold/Release example. Press A to test.");
+            if ui.button("Clear").clicked() {
+                self.text.clear();
+            }
+            ScrollArea::vertical()
+                .auto_shrink([false; 2])
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    ui.label(&self.text);
+                });
+
+            if ctx.input(|i| i.key_pressed(Key::A)) {
+                self.text.push_str("\nPressed");
+            }
+            if ctx.input(|i| i.key_down(Key::A)) {
+                self.text.push_str("\nHeld");
+                ui.ctx().request_repaint(); // make sure we note the holding.
+            }
+            if ctx.input(|i| i.key_released(Key::A)) {
+                self.text.push_str("\nReleased");
+            }
+        });
+    }
+}
 
 fn main() {
 
@@ -28,8 +61,6 @@ fn main() {
     let image = s.screenshot(di,delay, CaptureArea::new(0,0,720,720)).unwrap();
     drop(s);
 
-    //fs::write(format!("target/screen_test.png"), buffer).unwrap();
-    //image::save_buffer_with_format("target/test.png", image.rgba(), image.width(), image.height(), ColorType::Rgba8, c.get_image_fmt().unwrap().get_image_format().unwrap()).expect("TODO: panic message");
     let img_fmt = ImageFormatter::from(image);
     tm.add_encoder(img_fmt.save_fmt("target/test".to_string(), c.get_image_fmt().unwrap()));
 
@@ -38,7 +69,15 @@ fn main() {
 
     img_fmt.to_clipboard().unwrap();
 
+    let options = eframe::NativeOptions::default();
+    let res = eframe::run_native(
+        &*c.get_app_name().unwrap(),
+        options,
+        Box::new(|_cc| Box::<Content>::default()),
+    );
+
     tm.join();
+
 
 
 }

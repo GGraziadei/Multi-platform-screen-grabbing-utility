@@ -1,14 +1,12 @@
-use std::borrow::Borrow;
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter, Pointer};
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
 use std::time::Duration;
+use egui::Key;
 use image::ImageFormat;
-use serde::{Deserialize, Serialize, Serializer};
-use serde::de::Unexpected::Str;
+use serde::{Deserialize, Serialize};
+
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum AcquireMode{
@@ -67,6 +65,53 @@ impl ImageFmt{
     }
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone,PartialEq)]
+pub struct KeyCombo{
+    k1 : Option<Key>,
+    k2 : Option<Key>,
+    k3 : Option<Key>
+}
+
+impl Default for KeyCombo{
+    fn default() -> Self {
+        Self{
+            k1: None,
+            k2: None,
+            k3: None,
+        }
+    }
+}
+
+impl KeyCombo{
+
+    pub fn new(combo : Vec<Key>) -> Self
+    {
+        assert!(combo.len()<=3 && combo.len()>0);
+
+        let mut k1 = None;
+        let mut k2 = None;
+        let mut k3 = None;
+
+        if combo.len() >= 1 {
+            k1 = Some(combo[0]);
+        }
+
+        if combo.len() >= 2 {
+            k1 = Some(combo[0]);
+        }
+
+        if combo.len() == 3 {
+            k1 = Some(combo[0]);
+        }
+
+        Self{
+            k1,
+            k2,
+            k3,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Configuration{
     app_name : RefCell<String>,
@@ -76,8 +121,11 @@ pub struct Configuration{
     height: Cell<usize>,
     width: Cell<usize>,
     delay: Cell<Option<Duration>>,
-    acquire_mode : Cell<AcquireMode>
+    acquire_mode : Cell<AcquireMode>,
+    hot_key : Cell<KeyCombo>
 }
+
+
 
 const SETTINGS_FILE: &'static str = "settings.json";
 
@@ -85,8 +133,7 @@ const SETTINGS_FILE: &'static str = "settings.json";
 impl Configuration{
 
     /*
-        Se presente un file di configurazione lo deserializza
-        altrimenti crea un file di configurazione di default e lo serializza
+        Create settings.json if absent open if present.
     */
     pub fn new() -> Self{
 
@@ -108,7 +155,8 @@ impl Configuration{
         height: usize,
         width: usize,
         delay: Option<Duration>,
-        acquire_mode : AcquireMode
+        acquire_mode : AcquireMode,
+        hot_key : KeyCombo
     ) -> Self
     {
         let c = Self{
@@ -120,6 +168,7 @@ impl Configuration{
             width: Cell::new(width),
             delay: Cell::new(delay),
             acquire_mode: Cell::new(acquire_mode),
+            hot_key: Cell::new(hot_key),
         };
         c.write().expect("Error during config file generation.");
         c
@@ -220,9 +269,37 @@ impl Configuration{
         Some(true)
     }
 
+    pub fn get_hot_key(&self) -> Option<Vec<Key>>
+    {
+        let val = self.hot_key.get();
+        let mut res = Vec::<Key>::new();
+
+        if let Some(k1) = val.k1{
+            res.push(k1);
+        }
+
+        if let Some(k2) = val.k2{
+            res.push(k2);
+        }
+
+        if let Some(k3) = val.k3{
+            res.push(k3);
+        }
+
+        Some(res)
+
+    }
+
+    pub fn set_hot_key(&self, hot_key : KeyCombo ) -> Option<bool>
+    {
+        self.hot_key.set(hot_key);
+        self.write()?;
+        Some(true)
+    }
+
     fn write(&self) -> Option<&'static str>
     {
-        let mut serialized =  serde_json::to_string(self).ok()?;
+        let serialized =  serde_json::to_string(self).ok()?;
         let mut file = File::create(SETTINGS_FILE).ok()?;
         file.write(serialized.as_ref()).ok()?;
 
@@ -238,4 +315,5 @@ impl Configuration{
 
         Some(deserialized)
     }
+
 }

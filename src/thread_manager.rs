@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, info};
 use crate::image_formatter::EncoderThread;
 use crate::screenshots::{ScreenshotExecutor, ScreenshotExecutorThread};
 
@@ -45,6 +45,8 @@ impl ThreadManager{
 
         screenshots_executor.thread.join()
             .expect("Error during screenshots_executor join");
+
+        info!("slave threads down");
     }
 
 }

@@ -1,18 +1,15 @@
-use std::fmt::Error;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
-use std::sync::Arc;
-use std::thread::{JoinHandle, scope, spawn};
+use std::thread::{JoinHandle,  spawn};
 use arboard::{Clipboard, ImageData};
-use image::{ColorType, DynamicImage, Frame, ImageError, ImageFormat, ImageResult, load_from_memory, load_from_memory_with_format};
+use image::{ColorType, Frame, ImageError, ImageFormat, ImageResult, load_from_memory, load_from_memory_with_format};
 use image::ColorType::Rgba8;
-use image::error::{EncodingError, ImageFormatHint, UnsupportedError};
-use image::ImageFormat::{Jpeg, Png};
-use log::{info, warn, error};
+use image::error::{EncodingError, ImageFormatHint};
+use image::ImageFormat::{Jpeg, Png, Gif};
+use log::{info};
 use screenshots::Image;
 use crate::configuration::ImageFmt;
-use crate::configuration::ImageFmt::GIF;
 
 pub struct EncoderThread{
     pub thread : JoinHandle<ImageResult<()>>,
@@ -42,7 +39,7 @@ impl From<Image> for ImageFormatter {
             buffer: value.rgba().clone(),
             width: value.width(),
             height: value.height(),
-            color_type: ColorType::Rgba8
+            color_type: Rgba8
         }
     }
 }
@@ -73,7 +70,7 @@ impl ImageFormatter{
                 info!("JPEG encoding end.");
                 result
             }
-            ImageFormat::Gif => {
+            Gif => {
                 info!("GIF encoding");
                 let w = File::create(p)?;
                 let w_buffer = BufWriter::with_capacity(formatter.buffer.len(), w);
@@ -105,7 +102,7 @@ impl ImageFormatter{
 
              _ => {
                  let format_hint = ImageFormatHint::from(p);
-                 ImageResult::Err(ImageError::Encoding(EncodingError::from_format_hint(format_hint)))
+                 Err(ImageError::Encoding(EncodingError::from_format_hint(format_hint)))
              }
         }
     }
@@ -113,7 +110,7 @@ impl ImageFormatter{
     pub fn save_fmt(&self, path : String, fmt : ImageFmt ) -> EncoderThread
     {
 
-        let mut p : String = (String::from(path));
+        let mut p : String = String::from(path);
         p.push_str(&fmt.get_image_ext().unwrap());
 
         let image_format = fmt.get_image_format().unwrap();
