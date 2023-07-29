@@ -2,13 +2,14 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{JoinHandle, spawn};
 use eframe::emath::{Align, Vec2};
 use eframe::epaint::hex_color;
-use egui::{Direction, Frame, Key, Layout, Margin, RichText, ScrollArea, SidePanel, TopBottomPanel};
+use egui::{Direction, Frame, Id, Key, LayerId, Layout, Margin, RichText, ScrollArea, SidePanel, TopBottomPanel};
 use eframe::Result;
 use egui::accesskit::Role::Image;
+use egui_extras::RetainedImage;
 use screenshots::DisplayInfo;
 use crate::configuration::{Configuration, ImageFmt};
 use crate::image_formatter::{EncoderThread, ImageFormatter};
-use crate::screenshots::ScreenshotExecutor;
+use crate::screenshots::{CaptureArea, ScreenshotExecutor};
 
 struct Content {
     configuration : Arc<RwLock<Configuration>>,
@@ -82,6 +83,11 @@ impl eframe::App for Content {
                     ui.checkbox(&mut true, "Esci dopo il salvataggio o la copia manuali");
                     ui.checkbox(&mut true, "Cattura al click");
                     let painter = ui.painter();
+                    let screenshot = self.screenshot_executor.screenshot(DisplayInfo::from_point(0,0).unwrap(), None, CaptureArea::new(0,0, 0,0)).unwrap();
+                    let imgf = ImageFormatter::from(screenshot);
+                    ctx.memory_mut(|mem|{
+                      mem.data.insert_temp(Id::from("screenshot"), imgf);
+                    });
                   }
                 );
               });

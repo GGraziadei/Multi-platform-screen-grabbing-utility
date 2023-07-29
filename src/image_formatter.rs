@@ -29,7 +29,7 @@ impl EncoderThread{
 
 #[derive(Clone)]
 pub struct ImageFormatter {
-    buffer : Vec<u8>,
+    pub buffer : Vec<u8>,
     width : u32,
     height : u32,
     color_type : ColorType
