@@ -39,6 +39,11 @@ impl eframe::App for Content {
             if ctx.input(|i| i.key_pressed(Key::A)) {
                 self.text.push_str("\nPressed");
             }
+
+            if ctx.input(|i| i.key_pressed(Key::B)) {
+                _frame.set_minimized(true);
+            }
+
             if ctx.input(|i| i.key_down(Key::A)) {
                 self.text.push_str("\nTake screenshot");
                 ui.ctx().request_repaint(); // make sure we note the holding.
