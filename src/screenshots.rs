@@ -63,7 +63,7 @@ impl ScreenshotExecutor{
 
     fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>) -> usize
     {
-        assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
+        //assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         info!("ScreenshotExecutor: thread_executor start");
         loop {
             match rx.recv(){

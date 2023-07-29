@@ -4,7 +4,9 @@ use egui::*;
 use egui::{RichText};
 
 #[derive(Default)]
-struct MyEguiApp {}
+struct MyEguiApp {
+
+}
 
 impl MyEguiApp {
 	fn new(cc: &eframe::CreationContext<'_>) -> Self {
