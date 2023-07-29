@@ -7,6 +7,7 @@ use eframe::Result;
 use egui::accesskit::Role::Image;
 use screenshots::DisplayInfo;
 use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::ImageFmt::PNG;
 use crate::image_combiner::ImageCombiner;
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::ScreenshotExecutor;
@@ -101,8 +102,8 @@ impl eframe::App for Content {
                           let di = DisplayInfo::from_point(0,0);
                           let images = self.screenshot_executor.screenshot_all(None);
                           let image = ImageCombiner::combine(images.unwrap());
-
-                          ImageFormatter::from(image.unwrap()).to_clipboard().unwrap();
+                          let mut encoders = self.encoders.lock().unwrap();
+                          encoders.push(ImageFormatter::from(image.unwrap()).save_fmt("target/ui_test".to_string(), ImageFmt::GIF));
                       }
 
                     ui.label(RichText::new("Modalità di acquisizione").size(16.0));

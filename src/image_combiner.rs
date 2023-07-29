@@ -23,19 +23,18 @@ impl ImageCombiner {
         let mut offset = 0;
         info!("Image combining start.");
 
-        for (index,i) in value.iter().enumerate()
+        for (index,i) in value.into_iter().rev().enumerate()
         {
             info!("Combine image {} entry point {}", index,offset);
             let img = ImageBuffer::from_raw(i.width(), i.height(),i.rgba().as_slice())?;
-            imageops::overlay(&mut buffer_image,&img,0,offset);
+            imageops::overlay(&mut buffer_image,&img,offset,0);
             offset += ( i.width() as i64);
         }
 
         info!("Image combining end.");
-
         Some(Image::new(
-            buffer_image.width(),
-            buffer_image.height(),
+            width,
+            height,
             buffer_image.into_bytes(),
         ))
     }
