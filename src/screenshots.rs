@@ -28,13 +28,15 @@ impl CaptureArea{
 
 struct PrintData{
     delay : Option<Duration>,
-    di : DisplayInfo,
-    ca : Option<CaptureArea>
+    di : Option<DisplayInfo>,
+    ca : Option<CaptureArea>,
+    all_screen: bool
 }
 
 enum ScreenshotMessage {
     Print(PrintData),
-    Image(Image)
+    Image(Image),
+    Images(Vec<Image>)
 }
 
 const REQUESTS: usize = 5;
@@ -70,14 +72,29 @@ impl ScreenshotExecutor{
                 Ok(msg) => {
                     if let ScreenshotMessage::Print( pd) = msg {
                         Self::thread_executor_delay(pd.delay);
-                        let s = Screen::new(&pd.di);
-                        let img = match pd.ca {
-                            None => {s.capture().unwrap()}
-                            Some(area) => {
-                                s.capture_area(area.x,area.y,area.width,area.height).unwrap()
+
+                        /*Results message*/
+                        let mut msg : ScreenshotMessage;
+
+                        if pd.all_screen {
+                            let screens = Screen::all().unwrap();
+                            let mut results = Vec::<Image>::with_capacity(screens.len());
+                            for s in screens.into_iter()  {
+                                results.push(s.capture().unwrap());
                             }
-                        } ;
-                        let msg = ScreenshotMessage::Image(img);
+                            msg = ScreenshotMessage::Images(results);
+                        }
+                        else{
+                            let s = Screen::new(&pd.di.unwrap());
+                            let img = match pd.ca {
+                                None => {s.capture().unwrap()}
+                                Some(area) => {
+                                    s.capture_area(area.x,area.y,area.width,area.height).unwrap()
+                                }
+                            };
+                            msg = ScreenshotMessage::Image(img);
+                        }
+
                         match tx.send(msg)  {
                             Ok(()) => {}
                             Err(e) => {
@@ -123,14 +140,15 @@ impl ScreenshotExecutor{
 
         let pd = PrintData{
             delay,
-            di,
+            di : Some(di),
             ca: area,
+            all_screen: false,
         };
 
         let m_send = ScreenshotMessage::Print(pd);
         tx.send(m_send).ok()?;
 
-        if let ScreenshotMessage::Image( img) = self.rx.recv().ok()?{
+        if let ScreenshotMessage::Image(img) = self.rx.recv().ok()?{
             /*Explicit drop of tx*/
             drop(tx);
             return Some(img);
@@ -138,7 +156,33 @@ impl ScreenshotExecutor{
 
         /*Explicit drop of tx*/
         drop(tx);
-        return None;
+        None
+    }
+
+    pub fn screenshot_all(&self, delay : Option<Duration>) -> Option<Vec<Image>>
+    {
+        /*Each thread can have own sender. MSSR */
+        let tx = self.tx.clone();
+
+        let pd = PrintData{
+            delay,
+            ca: None,
+            all_screen: true,
+            di: None,
+        };
+
+        let m_send = ScreenshotMessage::Print(pd);
+        tx.send(m_send).ok()?;
+
+        if let ScreenshotMessage::Images(img) = self.rx.recv().ok()?{
+            /*Explicit drop of tx*/
+            drop(tx);
+            return Some(img);
+        }
+
+        /*Explicit drop of tx*/
+        drop(tx);
+        None
     }
 
 }

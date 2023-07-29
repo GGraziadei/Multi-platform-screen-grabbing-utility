@@ -7,6 +7,7 @@ use eframe::Result;
 use egui::accesskit::Role::Image;
 use screenshots::DisplayInfo;
 use crate::configuration::{Configuration, ImageFmt};
+use crate::image_combiner::ImageCombiner;
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::ScreenshotExecutor;
 
@@ -64,8 +65,6 @@ impl eframe::App for Content {
         // });
         let window_size = _frame.info().window_info.size;
         _frame.set_window_title("MPSGU");
-
-
         TopBottomPanel::top("top")
           .frame(Frame{fill: hex_color!("#2B2D30"), ..Default::default()})
           .show_separator_line(false)
@@ -97,6 +96,15 @@ impl eframe::App for Content {
                   Vec2::new(window_size.x*w, window_size.y*0.8),
                   Layout::top_down_justified( Align::Center),
                   |ui| {
+
+                      if ui.button("Screenshot").clicked() {
+                          let di = DisplayInfo::from_point(0,0);
+                          let images = self.screenshot_executor.screenshot_all(None);
+                          let image = ImageCombiner::combine(images.unwrap());
+
+                          ImageFormatter::from(image.unwrap()).to_clipboard().unwrap();
+                      }
+
                     ui.label(RichText::new("Modalità di acquisizione").size(16.0));
                     ui.add_space(10.0);
                     ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);

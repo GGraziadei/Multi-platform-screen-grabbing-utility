@@ -6,5 +6,6 @@ mod configuration;
 mod image_formatter;
 mod screenshots;
 mod main_window;
+mod image_combiner;
 
 fn main() { ThreadManager::new().join(); }
