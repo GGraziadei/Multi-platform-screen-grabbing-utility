@@ -3,6 +3,7 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::thread::{JoinHandle,  spawn};
 use arboard::{Clipboard, ImageData};
+use egui_extras::RetainedImage;
 use image::{ColorType, Frame, ImageError, ImageFormat, ImageResult, load_from_memory, load_from_memory_with_format};
 use image::ColorType::Rgba8;
 use image::error::{EncodingError, ImageFormatHint};
