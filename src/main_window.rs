@@ -26,9 +26,11 @@ impl eframe::App for Content {
     if self.close {
       _frame.set_visible(false);
     }
-    
+
+    let bg_color = ctx.style().visuals.panel_fill;
+
     TopBottomPanel::top("top")
-      .frame(Frame{fill: hex_color!("#2B2D30"), ..Default::default()})
+      .frame(Frame{fill: bg_color, ..Default::default()})
       .show_separator_line(false)
       .resizable(false)
       .min_height(window_size.y*0.1)
@@ -42,14 +44,14 @@ impl eframe::App for Content {
         );
       });
     TopBottomPanel::top("bottom")
-      .frame(Frame{fill: hex_color!("#2B2D30"), ..Default::default()})
+      .frame(Frame{fill: bg_color, ..Default::default()})
       .show_separator_line(false)
       .resizable(false)
       .min_height(window_size.y*0.9)
       .show(ctx, |ui| {
         let w = 0.3;
         SidePanel::left("left")
-          .frame(Frame{inner_margin: Margin::symmetric(20.0, 0.0), fill: hex_color!("#2B2D30"), ..Default::default()})
+          .frame(Frame{inner_margin: Margin::symmetric(20.0, 0.0), fill: bg_color, ..Default::default()})
           .show_separator_line(false)
           .resizable(false)
           .exact_width(window_size.x*w)
@@ -81,7 +83,7 @@ impl eframe::App for Content {
             );
           });
         SidePanel::right("right")
-          .frame(Frame{inner_margin: Margin::symmetric(20.0, 0.0), fill: hex_color!("#2B2D30"), ..Default::default()})
+          .frame(Frame{inner_margin: Margin::symmetric(20.0, 0.0), fill: bg_color, ..Default::default()})
           .show_separator_line(false)
           .resizable(false)
           .exact_width(window_size.x*(1.0-w))
