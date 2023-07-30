@@ -8,6 +8,7 @@ use screenshots::{Compression, DisplayInfo};
 use crate::configuration::Configuration;
 use crate::configuration::ImageFmt::PNG;
 use crate::image_formatter::{EncoderThread, ImageFormatter};
+use crate::screenshot_window::screenshot_window;
 use crate::screenshots::{CaptureArea, ScreenshotExecutor};
 
 struct Content {
@@ -15,11 +16,16 @@ struct Content {
   screenshot_executor : ScreenshotExecutor,
   encoders : Arc<Mutex<Vec<EncoderThread>>>,
   text: String,
+  close: bool
 }
 
 impl eframe::App for Content {
-  fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+  fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
     let window_size = _frame.info().window_info.size;
+    
+    if self.close {
+      _frame.set_visible(false);
+    }
     
     TopBottomPanel::top("top")
       .frame(Frame{fill: hex_color!("#2B2D30"), ..Default::default()})
@@ -60,13 +66,13 @@ impl eframe::App for Content {
                 if ui.button("Tutti gli schermi").clicked(){};
                 if ui.button("Schermo attuale").clicked(){
                   let di = DisplayInfo::from_point(0,0).unwrap();
-                  _frame.set_visible(false);
                   let screenshot = self.screenshot_executor.screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
                   let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
                   let mut encoders = self.encoders.lock().unwrap();
                   encoders.push(ImageFormatter::from(screenshot).save_fmt("target/ui_test".to_string(), PNG));
                   ctx.memory_mut(|mem|{
                     mem.data.insert_temp(Id::from("screenshot"), imgf);
+                    // screenshot_window(self.configuration.clone(), self.encoders.clone(), ScreenshotExecutor::new().0);
                   });
                 };
                 if ui.button("Finestra attiva").clicked(){};
@@ -94,12 +100,7 @@ impl eframe::App for Content {
                 let mut painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("screenshot")));
                 let size_x = (window_size.x*(1.0-w))-80.0;
                 let size_y = size_x*9.0/16.0;
-                let painter_rect = Rect::from_min_size(pos2((window_size.x*w)+60.0, window_size.y*0.5), Vec2::new(size_x, size_y));
-                painter.set_clip_rect(painter_rect);
-                painter.rect_filled(painter_rect, 0.0, Color32::from_rgb(255, 0, 0));
-                let rimage = RetainedImage::from_color_image("placeholder", ColorImage::example());
-                painter.image(rimage.texture_id(ctx), painter_rect, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
-                let mut r_image = RetainedImage::from_image_bytes("screenshot", include_bytes!("screenshot.png")).unwrap();
+                let mut r_image = RetainedImage::from_color_image("placeholder", ColorImage::example());
                 let mut screenshot_done = false;
                 ctx.memory(|mem|{
                   let image = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
@@ -109,40 +110,47 @@ impl eframe::App for Content {
                   }
                 });
                 if screenshot_done {
-                  painter.image(r_image.texture_id(ctx), painter_rect, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
+                  _frame.close();
+                  screenshot_window(self.configuration.clone(), self.encoders.clone(), ScreenshotExecutor::new().0);
+                  println!("CHIUSA");
                 }
-                _frame.set_visible(true);
               });
           });
       });
+  }
+  
+  fn on_close_event(&mut self) -> bool {
+    self.close = true;
+    false
   }
 }
 
 pub fn main_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor){
   let configuration_read = configuration.read()
     .expect("Error. Cannot run gui thread without configuration file.");
-
+  
   let app_name_tmp = configuration_read.get_app_name().unwrap().clone();
   
   drop(configuration_read);
   
   let options = eframe::NativeOptions{
-      resizable: false,
-      follow_system_theme: true,
-      initial_window_size: Some(egui::Vec2::new(640.0, 520.0)),
-      ..Default::default()
+    resizable: false,
+    follow_system_theme: true,
+    initial_window_size: Some(egui::Vec2::new(640.0, 360.0)),
+    ..Default::default()
   };
   
   let content = Content{
-      configuration,
-      screenshot_executor: s,
-      encoders,
-      text: "".to_string(),
+    configuration,
+    screenshot_executor: s,
+    encoders,
+    text: "".to_string(),
+    close: false,
   };
   
   run_native(
-      &*app_name_tmp,
-      options,
-      Box::new(move |_cc| Box::<Content>::new(content)),
+    &*app_name_tmp,
+    options,
+    Box::new(move |_cc| Box::<Content>::new(content)),
   ).expect("Error during gui thread init.");
 }
