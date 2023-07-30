@@ -9,6 +9,8 @@ use egui::accesskit::Role::Image;
 use egui_extras::RetainedImage;
 use screenshots::{Compression, DisplayInfo};
 use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::ImageFmt::PNG;
+use crate::image_combiner::ImageCombiner;
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{CaptureArea, ScreenshotExecutor};
 
@@ -21,6 +23,49 @@ struct Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // egui::CentralPanel::default().show(ctx, |ui| {
+        //     ui.heading("Press/Hold/Release example. Press A to test.");
+        //     if ui.button("Clear").clicked() {
+        //         self.text.clear();
+        //     }
+        //
+        //     if ui.button("Screenshot").clicked() {
+        //         let di = DisplayInfo::from_point(0,0);
+        //         let image = self.screenshot_executor.screenshot(di.unwrap(), None, None);
+        //         ImageFormatter::from(image.unwrap()).to_clipboard().unwrap();
+        //     }
+        //
+        //     ScrollArea::vertical()
+        //         .auto_shrink([false; 2])
+        //         .stick_to_bottom(true)
+        //         .show(ui, |ui| {
+        //             ui.label(&self.text);
+        //         });
+        //
+        //     if ctx.input(|i| i.key_pressed(Key::A)) {
+        //         self.text.push_str("\nPressed");
+        //     }
+        //
+        //     if ctx.input(|i| i.key_pressed(Key::B)) {
+        //         _frame.set_minimized(true);
+        //     }
+        //
+        //     if ctx.input(|i| i.key_down(Key::A)) {
+        //         self.text.push_str("\nTake screenshot");
+        //         ui.ctx().request_repaint(); // make sure we note the holding.
+        //         let mut encoders = self.encoders.lock()
+        //             .expect("Error in encoders access");
+        //         let di = DisplayInfo::from_point(0,0);
+        //         let image = self.screenshot_executor.screenshot(di.unwrap(), None, None);
+        //
+        //         encoders.push(ImageFormatter::from(image.unwrap()).save_fmt("target/ui_test".to_string(), ImageFmt::PNG));
+        //         drop(encoders);
+        //
+        //     }
+        //     if ctx.input(|i| i.key_released(Key::A)) {
+        //         self.text.push_str("\nReleased");
+        //     }
+        // });
         let window_size = _frame.info().window_info.size;
 
         TopBottomPanel::top("top")
@@ -54,6 +99,15 @@ impl eframe::App for Content {
                   Vec2::new(window_size.x*w, window_size.y*0.8),
                   Layout::top_down_justified( Align::Center),
                   |ui| {
+
+                      if ui.button("Screenshot").clicked() {
+                          let di = DisplayInfo::from_point(0,0);
+                          let images = self.screenshot_executor.screenshot_all(None);
+                          let image = ImageCombiner::combine(images.unwrap());
+                          let mut encoders = self.encoders.lock().unwrap();
+                          encoders.push(ImageFormatter::from(image.unwrap()).save_fmt("target/ui_test".to_string(), ImageFmt::GIF));
+                      }
+
                     ui.label(RichText::new("Modalità di acquisizione").size(16.0));
                     ui.add_space(10.0);
                     ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
@@ -99,6 +153,7 @@ impl eframe::App for Content {
                     ui.checkbox(&mut true, "Cattura solo la finestra attuale");
                     ui.checkbox(&mut true, "Esci dopo il salvataggio o la copia manuali");
                     ui.checkbox(&mut true, "Cattura al click");
+
                   }
                 );
               });
@@ -121,7 +176,7 @@ impl GuiThread {
         drop(configuration_read);
 
         let options = eframe::NativeOptions{
-            // resizable: false,
+            resizable: false,
             follow_system_theme: true,
             initial_window_size: Some(egui::Vec2::new(640.0, 360.0)),
             ..Default::default()

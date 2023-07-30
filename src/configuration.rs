@@ -1,22 +1,40 @@
 use std::cell::{Cell, RefCell};
 use std::fmt::{Display, Formatter};
 use std::fs::File;
+use std::hash::Hash;
 use std::io::{Read, Write};
 use std::time::Duration;
+use egui::epaint::ahash::HashMap;
 use egui::Key;
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 
-
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
+    /*Active window*/
     Window,
-    DragDrop
+    /*Select screen*/
+    Screen,
+    /*Merge all screen*/
+    AllScreen,
+    /*Active screen (in front-end flag for edit image)*/
+    DragDrop,
 }
 
 impl Default for AcquireMode{
     fn default() -> Self {
         AcquireMode::DragDrop
+    }
+}
+
+impl Display for AcquireMode{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            AcquireMode::Window => { "Window" }
+            AcquireMode::Screen => { "Active screen" }
+            AcquireMode::AllScreen => { "All screens" }
+            AcquireMode::DragDrop => { "Drag and drop" }
+        })
     }
 }
 
@@ -114,21 +132,17 @@ impl KeyCombo{
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Configuration{
-    app_name : RefCell<String>,
-    save_path : RefCell<String>,
-    image_format : RefCell<ImageFmt>,
-    coordinates : Cell<(usize, usize)>,
-    height: Cell<usize>,
-    width: Cell<usize>,
-    delay: Cell<Option<Duration>>,
-    acquire_mode : Cell<AcquireMode>,
-    hot_key : Cell<KeyCombo>
+    app_name : String,
+    save_path : String,
+    image_format : ImageFmt,
+    coordinates : (usize,usize),
+    height: usize,
+    width: usize,
+    delay: Option<Duration>,
+    hot_key_map : HashMap<AcquireMode, KeyCombo>
 }
 
-
-
 const SETTINGS_FILE: &'static str = "settings.json";
-
 
 impl Configuration{
 
@@ -155,144 +169,115 @@ impl Configuration{
         height: usize,
         width: usize,
         delay: Option<Duration>,
-        acquire_mode : AcquireMode,
-        hot_key : KeyCombo
+        hot_key_map : HashMap<AcquireMode, KeyCombo>
     ) -> Self
     {
         let c = Self{
-            app_name: RefCell::new(app_name),
-            save_path: RefCell::new(save_path),
-            image_format: RefCell::new(image_format),
-            coordinates: Cell::new(coordinates),
-            height: Cell::new(height),
-            width: Cell::new(width),
-            delay: Cell::new(delay),
-            acquire_mode: Cell::new(acquire_mode),
-            hot_key: Cell::new(hot_key),
+            app_name,
+            save_path,
+            image_format,
+            coordinates,
+            height,
+            width,
+            delay,
+            hot_key_map,
         };
         c.write().expect("Error during config file generation.");
         c
     }
 
-    pub fn get_app_name(&self) -> Option<String>{
-       Some((self.app_name.try_borrow().ok()?).clone())
+    pub fn get_app_name(&self) -> Option<String>
+    {
+       Some((self.app_name).clone())
     }
 
-    pub fn set_app_name(&self , app_name : String) -> Option<bool>
+    pub fn set_app_name(&mut self , app_name : String) -> Option<bool>
     {
-        *self.app_name.borrow_mut() =app_name;
+        self.app_name = app_name;
         self.write()?;
         Some(true)
     }
 
-    pub fn get_save_path(&self) -> Option<String> {
-        let s = self.save_path.borrow().clone();
-        Some(s)
+    pub fn get_save_path(&self) -> Option<String>
+    {
+        Some(self.save_path.clone())
     }
 
-    pub fn set_save_path(&self , save_path : String) -> Option<bool>
+    pub fn set_save_path(&mut self , save_path : String) -> Option<bool>
     {
-        *self.save_path.borrow_mut() =save_path;
+        self.save_path=save_path;
         self.write()?;
         Some(true)
     }
 
-    pub fn get_image_fmt(&self) -> Option<ImageFmt> {
-        let s = self.image_format.borrow().clone();
-        Some(s)
+    pub fn get_image_fmt(&self) -> Option<ImageFmt>
+    {
+        Some(self.image_format.clone())
     }
 
-    pub fn set_image_fmt(&self , image_format : ImageFmt) -> Option<bool>
+    pub fn set_image_fmt(&mut self , image_format : ImageFmt) -> Option<bool>
     {
-        *self.image_format.borrow_mut() =image_format;
+        self.image_format = image_format;
         self.write()?;
         Some(true)
     }
 
     pub fn get_coordinates(&self) -> Option<(usize, usize)>
     {
-        Some(self.coordinates.get())
+        Some(self.coordinates.clone())
     }
 
-    pub fn set_coordinates(&self, coordinates : (usize, usize)) -> Option<bool>
+    pub fn set_coordinates(&mut self, coordinates : (usize, usize)) -> Option<bool>
     {
-        self.coordinates.set(coordinates);
+        self.coordinates = coordinates;
         self.write()?;
         Some(true)
     }
 
     pub fn get_height(&self) -> Option<usize>
     {
-        Some(self.height.get())
+        Some(self.height)
     }
 
-    pub fn set_height(&self, height : usize ) -> Option<bool>
+    pub fn set_height(&mut self, height : usize ) -> Option<bool>
     {
-        self.height.set(height);
+        self.height = height;
         self.write()?;
         Some(true)
     }
 
     pub fn get_width(&self)  -> Option<usize>
     {
-        Some(self.width.get())
+        Some(self.width)
     }
 
-    pub fn set_width(&self, width : usize ) -> Option<bool>
+    pub fn set_width(&mut self, width : usize ) -> Option<bool>
     {
-        self.width.set(width);
-        self.write()?;
-        Some(true)
-    }
-
-    pub fn get_acquire_mode(&self) -> Option<AcquireMode>
-    {
-        Some(self.acquire_mode.get())
-    }
-
-    pub fn set_acquire_mode(&self, acquire_mode : AcquireMode ) -> Option<bool>
-    {
-        self.acquire_mode.set(acquire_mode);
+        self.width = width;
         self.write()?;
         Some(true)
     }
 
     pub fn get_delay(&self) -> Option<Duration>
     {
-        self.delay.get()
+        self.delay.clone()
     }
 
-    pub fn set_delay(&self, delay : Option<Duration> ) -> Option<bool>
+    pub fn set_delay(&mut self, delay : Option<Duration> ) -> Option<bool>
     {
-        self.delay.set(delay);
+        self.delay = delay;
         self.write()?;
         Some(true)
     }
 
-    pub fn get_hot_key(&self) -> Option<Vec<Key>>
+    pub fn get_hot_key_map(&self) -> Option<HashMap<AcquireMode, KeyCombo>>
     {
-        let val = self.hot_key.get();
-        let mut res = Vec::<Key>::new();
-
-        if let Some(k1) = val.k1{
-            res.push(k1);
-        }
-
-        if let Some(k2) = val.k2{
-            res.push(k2);
-        }
-
-        if let Some(k3) = val.k3{
-            res.push(k3);
-        }
-
-        Some(res)
-
+        Some(self.hot_key_map.clone())
     }
 
-    pub fn set_hot_key(&self, hot_key : KeyCombo ) -> Option<bool>
+    pub fn set_hot_key_map(&mut self, map: HashMap<AcquireMode, KeyCombo>) -> Option<bool>
     {
-        self.hot_key.set(hot_key);
+        self.hot_key_map = map;
         self.write()?;
         Some(true)
     }
