@@ -81,31 +81,43 @@ impl Content {
   pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let mut di = self.get_current_screen_di(_frame);
     let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
-    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    let img_bytes = screenshot.rgba().clone();
+    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
     ctx.memory_mut(|mem|{
-      mem.data.insert_temp(Id::from("screenshot"), imgf);
-      self.set_win_type(Screenshot);
+      mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+      mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+      mem.data.insert_temp(Id::from("width"), screenshot.width());
+      mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
+    self.set_win_type(Screenshot);
   }
 
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let mut di = self.get_current_screen_di(_frame);
     let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
-    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    let img_bytes = screenshot.rgba().clone();
+    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
     ctx.memory_mut(|mem|{
-      mem.data.insert_temp(Id::from("screenshot"), imgf);
-      self.set_win_type(Select);
+      mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+      mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+      mem.data.insert_temp(Id::from("width"), screenshot.width());
+      mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
+    self.set_win_type(Select);
   }
 
   pub fn all_screens(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let images = self.get_se().screenshot_all(None);
     let screenshot = ImageCombiner::combine(images.unwrap()).unwrap();
-    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    let img_bytes = screenshot.rgba().clone();
+    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
     ctx.memory_mut(|mem|{
-      mem.data.insert_temp(Id::from("screenshot"), imgf);
-      self.set_win_type(Screenshot);
+      mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+      mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+      mem.data.insert_temp(Id::from("width"), screenshot.width());
+      mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
+    self.set_win_type(Screenshot);
   }
 
   pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> DisplayInfo {

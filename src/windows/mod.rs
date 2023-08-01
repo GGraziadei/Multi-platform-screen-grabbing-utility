@@ -1,3 +1,3 @@
 mod main_window;
-mod screenshot_window;
+mod preview_window;
 mod select_window;

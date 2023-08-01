@@ -42,9 +42,9 @@ impl Content{
 			ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
 
 			ctx.memory(|mem|{
-				let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+				let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
 				if mem_image.is_some(){
-					r_image = RetainedImage::from_image_bytes("screenshot", mem_image.unwrap().as_slice()).unwrap();
+					r_image = RetainedImage::from_image_bytes("bytes", mem_image.unwrap().as_slice()).unwrap();
 					screenshot_ok = true;
 				}
 			});
@@ -71,8 +71,12 @@ impl Content{
 						let ca = CaptureArea::new(x, y, width, height);
 						println!("{:?}", di);
 						let screenshot = self.get_se().screenshot(di, None,ca).unwrap();
-						let image = screenshot.to_png(Some(Compression::Best)).unwrap();
-						mem.data.insert_temp(Id::new("screenshot"), image);
+						let img_bytes = screenshot.rgba().clone();
+						let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
+						mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+						mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+						mem.data.insert_temp(Id::from("width"), screenshot.width());
+						mem.data.insert_temp(Id::from("height"), screenshot.height());
 						self.set_win_type(Screenshot);
 					}
 				});

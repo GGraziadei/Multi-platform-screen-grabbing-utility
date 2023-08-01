@@ -2,6 +2,8 @@ use eframe::epaint::textures::TextureOptions;
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
 use egui_extras::RetainedImage;
+use crate::configuration::ImageFmt;
+use crate::image_formatter::ImageFormatter;
 use crate::window::Content;
 
 impl Content {
@@ -11,6 +13,8 @@ impl Content {
 		let w = 0.6;
 		let margin = 20.0;
 		let mut first_render = true;
+		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
+		let mut screenshot_ok = false;
 
 		_frame.set_window_size(Vec2::new(1000.0, 600.0));
 		_frame.set_fullscreen(false);
@@ -30,6 +34,17 @@ impl Content {
 			});
 		}
 
+		ctx.memory(|mem|{
+			let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
+			if fast_bytes.is_some(){
+				r_image = RetainedImage::from_image_bytes(
+					"screenshot",
+					fast_bytes.unwrap().as_slice()
+				).unwrap();
+				screenshot_ok = true;
+			}
+		});
+
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
       .show_separator_line(false)
@@ -42,82 +57,66 @@ impl Content {
 						ui.spacing_mut().item_spacing.x = 10.0;
 						let icon_size = Vec2::new(16.0,16.0);
 
-						if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
-							let save_icon = RetainedImage::from_svg_bytes_with_size(
-									"save",
-									include_bytes!("../images/save_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
-							let save_as_icon = RetainedImage::from_svg_bytes_with_size(
-									"save_as",
-									include_bytes!("../images/save_as_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
-							let copy_icon = RetainedImage::from_svg_bytes_with_size(
-									"copy",
-									include_bytes!("../images/copy_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
-							let edit_icon = RetainedImage::from_svg_bytes_with_size(
-									"edit",
-									include_bytes!("../images/edit_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
-							if ui.add(
-								Button::image_and_text(
-									save_icon.texture_id(ctx),
-									icon_size,
-									"Salva")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									save_as_icon.texture_id(ctx),
-									icon_size,
-									"Salva come...")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									copy_icon.texture_id(ctx),
-									icon_size,
-									"Copia")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									edit_icon.texture_id(ctx),
-									icon_size,
-									"Annota")).clicked(){}
-						}
-						else{
-							let save_icon = RetainedImage::from_svg_bytes_with_size(
+						let mut save_icon = RetainedImage::from_svg_bytes_with_size(
 									"save",
 									include_bytes!("../images/save_black.svg"),
 									egui_extras::image::FitTo::Original).unwrap();
-							let save_as_icon = RetainedImage::from_svg_bytes_with_size(
+						let mut save_as_icon = RetainedImage::from_svg_bytes_with_size(
+								"save_as",
+								include_bytes!("../images/save_as_black.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
+						let mut copy_icon = RetainedImage::from_svg_bytes_with_size(
+								"copy",
+								include_bytes!("../images/copy_black.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
+						let mut edit_icon = RetainedImage::from_svg_bytes_with_size(
+								"edit",
+								include_bytes!("../images/edit_black.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
+
+						if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+							save_icon = RetainedImage::from_svg_bytes_with_size(
+									"save",
+									include_bytes!("../images/save_white.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							save_as_icon = RetainedImage::from_svg_bytes_with_size(
 									"save_as",
-									include_bytes!("../images/save_as_black.svg"),
+									include_bytes!("../images/save_as_white.svg"),
 									egui_extras::image::FitTo::Original).unwrap();
-							let copy_icon = RetainedImage::from_svg_bytes_with_size(
+							copy_icon = RetainedImage::from_svg_bytes_with_size(
 									"copy",
-									include_bytes!("../images/copy_black.svg"),
+									include_bytes!("../images/copy_white.svg"),
 									egui_extras::image::FitTo::Original).unwrap();
-							let edit_icon = RetainedImage::from_svg_bytes_with_size(
+							edit_icon = RetainedImage::from_svg_bytes_with_size(
 									"edit",
-									include_bytes!("../images/edit_black.svg"),
+									include_bytes!("../images/edit_white.svg"),
 									egui_extras::image::FitTo::Original).unwrap();
-							if ui.add(
-								Button::image_and_text(
-									save_icon.texture_id(ctx),
-									icon_size,
-									"Salva")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									save_as_icon.texture_id(ctx),
-									icon_size,
-									"Salva come...")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									copy_icon.texture_id(ctx),
-									icon_size,
-									"Copia")).clicked(){}
-							if ui.add(
-								Button::image_and_text(
-									edit_icon.texture_id(ctx),
-									icon_size,
-									"Annota")).clicked(){}
 						}
+						if ui.add(
+							Button::image_and_text(
+								save_icon.texture_id(ctx),
+								icon_size,
+								"Salva")).clicked()
+						{
+							self.save_image(ctx);
+						}
+						if ui.add(
+							Button::image_and_text(
+								save_as_icon.texture_id(ctx),
+								icon_size,
+								"Salva come...")).clicked(){}
+						if ui.add(
+							Button::image_and_text(
+								copy_icon.texture_id(ctx),
+								icon_size,
+								"Copia")).clicked(){
+							self.copy_image(ctx);
+						}
+						if ui.add(
+							Button::image_and_text(
+								edit_icon.texture_id(ctx),
+								icon_size,
+								"Annota")).clicked(){}
 					}
 				);
       });
@@ -133,19 +132,10 @@ impl Content {
 						let mut painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("screenshot")));
 						let size_x = ui.available_width();
 						let size_y = ui.available_height();
-						let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
-						let mut screenshot_ok = false;
 						let painter_rect = Rect::from_min_size(pos2(margin,window_size.y-size_y - margin), Vec2::new(size_x, size_y));
 
 						painter.set_clip_rect(painter_rect);
 						// painter.rect_filled(painter_rect, 0.0, Color32::RED);
-						ctx.memory(|mem|{
-							let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-							if mem_image.is_some(){
-								r_image = RetainedImage::from_image_bytes("screenshot", mem_image.unwrap().as_slice()).unwrap();
-								screenshot_ok = true;
-							}
-						});
 
 						if screenshot_ok {
 							let uv_rect = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
@@ -203,6 +193,33 @@ impl Content {
 			});
 	}
 
+	fn save_image(&mut self, ctx: &Context) {
+		let mut image = screenshots::Image::new(0,0,vec![]);
+		ctx.memory(|mem|{
+			let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+			if image_bytes.is_some(){
+				let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+				let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+				image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
+			}
+			let imgf = ImageFormatter::from(image);
+			imgf.save_fmt("/home/bernard/Scrivania/screenshot".to_string(), ImageFmt::PNG);
+		});
+	}
 
+	fn copy_image(&mut self, ctx: &Context) {
+		let mut image = screenshots::Image::new(0,0,vec![]);
+		ctx.memory(|mem|{
+			let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+			if image_bytes.is_some(){
+				let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+				let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+				image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
+			}
+			let imgf = ImageFormatter::from(image);
+			imgf.to_clipboard();
+		});
+	}
 
 }
+
