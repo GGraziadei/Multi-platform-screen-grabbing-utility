@@ -5,7 +5,7 @@ mod gui;
 mod configuration;
 mod image_formatter;
 mod screenshots;
-mod draw_window;
+mod window;
 mod image_combiner;
 mod windows;
 

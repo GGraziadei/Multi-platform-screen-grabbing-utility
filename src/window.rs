@@ -1,6 +1,6 @@
 use std::default::Default;
 use std::sync::{Arc, Mutex, RwLock};
-use eframe::run_native;
+use eframe::{egui, run_native, Theme};
 use egui::*;
 use crate::configuration::Configuration;
 use crate::image_formatter::{EncoderThread};
@@ -58,6 +58,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     resizable: false,
     follow_system_theme: true,
     initial_window_size: Some(Vec2::new(640.0, 360.0)),
+    default_theme: Theme::Dark,
     // centered: true,
     ..Default::default()
   };

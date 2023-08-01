@@ -4,8 +4,8 @@ use egui::accesskit::Role::Caption;
 use egui_extras::RetainedImage;
 use env_logger::init;
 use screenshots::Compression;
-use crate::draw_window::Content;
-use crate::draw_window::WindowType::Screenshot;
+use crate::window::Content;
+use crate::window::WindowType::Screenshot;
 use crate::screenshots::CaptureArea;
 
 #[derive(Clone, Copy, Debug)]

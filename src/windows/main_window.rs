@@ -2,8 +2,8 @@ use std::thread::current;
 use eframe::emath::{Align, Vec2};
 use egui::{Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
 use screenshots::{Compression, DisplayInfo};
-use crate::draw_window::{Content};
-use crate::draw_window::WindowType::*;
+use crate::window::{Content};
+use crate::window::WindowType::*;
 use crate::image_combiner::ImageCombiner;
 use crate::screenshots::CaptureArea;
 

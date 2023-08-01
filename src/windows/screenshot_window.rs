@@ -1,11 +1,8 @@
-use eframe::emath::{Align, Vec2};
-use egui::{Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel};
+use eframe::epaint::textures::TextureOptions;
+use eframe::Theme;
+use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
 use egui_extras::RetainedImage;
-use screenshots::{Compression, DisplayInfo};
-use crate::draw_window::Content;
-use crate::draw_window::WindowType::Screenshot;
-use crate::image_combiner::ImageCombiner;
-use crate::screenshots::CaptureArea;
+use crate::window::Content;
 
 impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -42,19 +39,85 @@ impl Content {
 					Layout::left_to_right(Align::LEFT),
 					|ui| {
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
-						ui.add(
-							Button::image_and_text(
-								RetainedImage::from_color_image(
-									"",
-									ColorImage::example())
-									.texture_id(ctx),
-								Vec2::new(10.0,10.0),
-								"Button"));
-						ui.button("Button 1");
-						ui.button("Button 1");
-						ui.button("Button 1");
-						ui.button("Button 1");
-						ui.button("Button 1");
+						ui.spacing_mut().item_spacing.x = 10.0;
+						let icon_size = Vec2::new(16.0,16.0);
+
+						if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+							let save_icon = RetainedImage::from_svg_bytes_with_size(
+									"save",
+									include_bytes!("../images/save_white.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let save_as_icon = RetainedImage::from_svg_bytes_with_size(
+									"save_as",
+									include_bytes!("../images/save_as_white.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let copy_icon = RetainedImage::from_svg_bytes_with_size(
+									"copy",
+									include_bytes!("../images/copy_white.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let edit_icon = RetainedImage::from_svg_bytes_with_size(
+									"edit",
+									include_bytes!("../images/edit_white.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							if ui.add(
+								Button::image_and_text(
+									save_icon.texture_id(ctx),
+									icon_size,
+									"Salva")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									save_as_icon.texture_id(ctx),
+									icon_size,
+									"Salva come...")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									copy_icon.texture_id(ctx),
+									icon_size,
+									"Copia")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									edit_icon.texture_id(ctx),
+									icon_size,
+									"Annota")).clicked(){}
+						}
+						else{
+							let save_icon = RetainedImage::from_svg_bytes_with_size(
+									"save",
+									include_bytes!("../images/save_black.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let save_as_icon = RetainedImage::from_svg_bytes_with_size(
+									"save_as",
+									include_bytes!("../images/save_as_black.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let copy_icon = RetainedImage::from_svg_bytes_with_size(
+									"copy",
+									include_bytes!("../images/copy_black.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							let edit_icon = RetainedImage::from_svg_bytes_with_size(
+									"edit",
+									include_bytes!("../images/edit_black.svg"),
+									egui_extras::image::FitTo::Original).unwrap();
+							if ui.add(
+								Button::image_and_text(
+									save_icon.texture_id(ctx),
+									icon_size,
+									"Salva")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									save_as_icon.texture_id(ctx),
+									icon_size,
+									"Salva come...")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									copy_icon.texture_id(ctx),
+									icon_size,
+									"Copia")).clicked(){}
+							if ui.add(
+								Button::image_and_text(
+									edit_icon.texture_id(ctx),
+									icon_size,
+									"Annota")).clicked(){}
+						}
 					}
 				);
       });

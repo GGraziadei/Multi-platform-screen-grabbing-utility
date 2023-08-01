@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, RwLock};
 use crate::configuration::{Configuration};
 use crate::image_formatter::{EncoderThread};
-use crate::draw_window::draw_window;
+use crate::window::draw_window;
 use crate::screenshots::{ScreenshotExecutor};
 
 
