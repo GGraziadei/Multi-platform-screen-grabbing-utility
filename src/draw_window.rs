@@ -40,7 +40,7 @@ impl eframe::App for Content {
       WindowType::Main => self.main_window(ctx, _frame),
       // WindowType::Settings => self.settings_window(ctx, _frame),
       WindowType::Screenshot => self.screenshot_window(ctx, _frame),
-      // WindowType::Select => self.select_window(ctx, _frame),
+      WindowType::Select => self.select_window(ctx, _frame),
       _ => {}
     }
   }

@@ -1,8 +1,10 @@
+use std::thread::current;
 use eframe::emath::{Align, Vec2};
 use egui::{Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
 use screenshots::{Compression, DisplayInfo};
 use crate::draw_window::{Content};
 use crate::draw_window::WindowType::*;
+use crate::image_combiner::ImageCombiner;
 use crate::screenshots::CaptureArea;
 
 impl Content {
@@ -41,27 +43,14 @@ impl Content {
                 ui.add_space(10.0);
                 ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
                 ui.spacing_mut().item_spacing.y = 10.0;
-                if ui.button("Regione rettangolare").clicked(){};
-                if ui.button("Tutti gli schermi").clicked(){};
+                if ui.button("Regione rettangolare").clicked(){
+                  self.select(ctx, _frame);
+                };
+                if ui.button("Tutti gli schermi").clicked(){
+                  self.all_screens(ctx, _frame);
+                };
                 if ui.button("Schermo attuale").clicked(){
-                  let mut di = DisplayInfo::from_point(0,0).unwrap();
-                  for (i, display) in DisplayInfo::all().unwrap().iter().enumerate(){
-                  let frame_pos = _frame.info().window_info.position.unwrap();
-                    if
-                       (display.x < frame_pos.x as i32) &&
-                       (frame_pos.x as i32) < (display.x + display.width as i32) &&
-                       (display.y < frame_pos.y as i32) &&
-                       (frame_pos.y as i32) < (display.y + display.height as i32)
-                    {
-                      di = display.clone();
-                    }
-                  }
-                  let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
-                  let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
-                  ctx.memory_mut(|mem|{
-                    mem.data.insert_temp(Id::from("screenshot"), imgf);
-                    self.set_win_type(Screenshot);
-                  });
+                  self.current_screen(ctx, _frame);
                 };
                 if ui.button("Finestra attiva").clicked(){};
                 if ui.button("Finestra sotto al cursore").clicked(){};
@@ -88,4 +77,51 @@ impl Content {
           });
       });
 	}
+
+  pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+    let mut di = self.get_current_screen_di(_frame);
+    let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
+    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    ctx.memory_mut(|mem|{
+      mem.data.insert_temp(Id::from("screenshot"), imgf);
+      self.set_win_type(Screenshot);
+    });
+  }
+
+  pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+    let mut di = self.get_current_screen_di(_frame);
+    let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
+    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    ctx.memory_mut(|mem|{
+      mem.data.insert_temp(Id::from("screenshot"), imgf);
+      self.set_win_type(Select);
+    });
+  }
+
+  pub fn all_screens(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+    let images = self.get_se().screenshot_all(None);
+    let screenshot = ImageCombiner::combine(images.unwrap()).unwrap();
+    let imgf = screenshot.to_png(Some(Compression::Best)).unwrap();
+    ctx.memory_mut(|mem|{
+      mem.data.insert_temp(Id::from("screenshot"), imgf);
+      self.set_win_type(Screenshot);
+    });
+  }
+
+  pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> DisplayInfo {
+    let mut di = DisplayInfo::from_point(0,0).unwrap();
+    for (i, display) in DisplayInfo::all().unwrap().iter().enumerate(){
+      let frame_pos = _frame.info().window_info.position.unwrap();
+      if
+         (display.x < frame_pos.x as i32) &&
+         (frame_pos.x as i32) < (display.x + display.width as i32) &&
+         (display.y < frame_pos.y as i32) &&
+         (frame_pos.y as i32) < (display.y + display.height as i32)
+      {
+        di = display.clone();
+        break;
+      }
+    }
+    di
+  }
 }
