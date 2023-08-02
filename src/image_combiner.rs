@@ -1,31 +1,47 @@
+use anyhow::Context;
 use image::{DynamicImage, ImageBuffer, imageops};
-use log::info;
+use log::{error, info};
 use screenshots::Image;
 
 pub struct ImageCombiner;
 
 impl ImageCombiner {
 
-    pub fn combine(value: Vec<Image>) -> Option<Image>
+    pub fn combine(value: Vec<anyhow::Result<Image>>) -> Option<Image>
     {
         let mut width : u32 = 0;
         let mut height : u32 = 0;
 
-        for i in value.iter()
+        /*
+            Check dimension and results of acquisition
+        */
+        let mut errors = false;
+        for image in value.iter()
         {
-            width += i.width();
-            if height < i.height(){
-                height = i.height()
+            match image{
+                Ok(i) => {
+                    width += i.width();
+                    if height < i.height(){
+                        height = i.height()
+                    }
+                }
+                Err(error) => {
+                    errors = true;
+                    error!("{}", error);
+                }
             }
         }
+
+        if errors{  return  None; }
 
         let mut buffer_image = DynamicImage::new_rgba8(width, height);
         let mut offset = 0;
         info!("Image combining start.");
 
-        for (index,i) in value.into_iter().rev().enumerate()
+        for (index,image) in value.into_iter().rev().enumerate()
         {
             info!("Combine image {} entry point {}", index,offset);
+            let i = image.unwrap();
             let img = ImageBuffer::from_raw(i.width(), i.height(),i.rgba().as_slice())?;
             imageops::overlay(&mut buffer_image,&img,offset,0);
             offset += ( i.width() as i64);

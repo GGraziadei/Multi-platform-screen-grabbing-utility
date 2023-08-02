@@ -1,6 +1,7 @@
 use std::thread::current;
 use eframe::emath::{Align, Vec2};
 use egui::{Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
+use log::{error, info};
 use screenshots::{Compression, DisplayInfo};
 use crate::window::{Content};
 use crate::window::WindowType::*;
@@ -80,35 +81,56 @@ impl Content {
 
   pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let mut di = self.get_current_screen_di(_frame);
-    let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
-    let img_bytes = screenshot.rgba().clone();
-    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
-    ctx.memory_mut(|mem|{
-      mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-      mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-      mem.data.insert_temp(Id::from("width"), screenshot.width());
-      mem.data.insert_temp(Id::from("height"), screenshot.height());
-    });
-    self.set_win_type(Screenshot);
+    match self.get_se().screenshot(di,  CaptureArea::new(0,0, di.width, di.height)) {
+      Ok(screenshot) => {
+        let img_bytes = screenshot.rgba().clone();
+        let img_bytes_fast = screenshot.to_png(None).unwrap();
+        ctx.memory_mut(|mem|{
+          mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+          mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+          mem.data.insert_temp(Id::from("width"), screenshot.width());
+          mem.data.insert_temp(Id::from("height"), screenshot.height());
+        });
+        self.set_win_type(Screenshot);
+      }
+      Err(error) => {
+        error!("{}" , error);
+      }
+    }
+
   }
 
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let mut di = self.get_current_screen_di(_frame);
-    let screenshot = self.get_se().screenshot(di, None, CaptureArea::new(0,0, di.width, di.height)).unwrap();
-    let img_bytes = screenshot.rgba().clone();
-    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
-    ctx.memory_mut(|mem|{
-      mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-      mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-      mem.data.insert_temp(Id::from("width"), screenshot.width());
-      mem.data.insert_temp(Id::from("height"), screenshot.height());
-    });
-    self.set_win_type(Select);
+    match self.get_se().screenshot(di,  CaptureArea::new(0,0, di.width, di.height)) {
+      Ok(screenshot) => {
+        let img_bytes = screenshot.rgba().clone();
+        let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
+        ctx.memory_mut(|mem|{
+          mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+          mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+          mem.data.insert_temp(Id::from("width"), screenshot.width());
+          mem.data.insert_temp(Id::from("height"), screenshot.height());
+        });
+        self.set_win_type(Select);
+      }
+      Err(error) => {
+        error!("{}",error);
+      }
+    }
   }
 
   pub fn all_screens(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-    let images = self.get_se().screenshot_all(None);
-    let screenshot = ImageCombiner::combine(images.unwrap()).unwrap();
+
+    let images = match self.get_se().screenshot_all() {
+      None => {
+        error!("Error during screens acquisition.");
+        return;
+      }
+      Some(images) => {images}
+    };
+
+    let screenshot = ImageCombiner::combine(images).unwrap();
     let img_bytes = screenshot.rgba().clone();
     let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
     ctx.memory_mut(|mem|{

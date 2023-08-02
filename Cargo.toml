@@ -17,4 +17,6 @@ thread-priority = "0.13.1"
 color-hex = "0.2.0"
 egui = {version="0.22.0", features = ["serde", "color-hex"]}
 eframe = "0.22.0"
-egui_extras = { features = ["svg", "image"] }
+egui_extras = {version="0.22.0", features = ["svg", "image"] }
+anyhow = "1.0.72"
+egui-modal = "0.2.4"

@@ -1,11 +1,13 @@
-use std::sync::{Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::sync::mpsc::{Receiver, RecvError, SendError, sync_channel, SyncSender};
 use std::thread;
 use std::thread::{Builder, JoinHandle, spawn};
 use std::time::Duration;
+use anyhow::Error;
 use log::info;
 use screenshots::{DisplayInfo, Image, Screen};
 use thread_priority::{set_current_thread_priority, ThreadPriority};
+use crate::configuration::Configuration;
 
 pub struct CaptureArea{
     x : i32,
@@ -27,7 +29,6 @@ impl CaptureArea{
 }
 
 struct PrintData{
-    delay : Option<Duration>,
     di : Option<DisplayInfo>,
     ca : Option<CaptureArea>,
     all_screen: bool
@@ -35,8 +36,8 @@ struct PrintData{
 
 enum ScreenshotMessage {
     Print(PrintData),
-    Image(Image),
-    Images(Vec<Image>)
+    Image(anyhow::Result<Image>),
+    Images(Vec<anyhow::Result<Image>>)
 }
 
 const REQUESTS: usize = 5;
@@ -63,7 +64,7 @@ impl ScreenshotExecutor{
         }
     }
 
-    fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>) -> usize
+    fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>, configuration: Arc<RwLock<Configuration>>) -> usize
     {
         //assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         info!("ScreenshotExecutor: thread_executor start");
@@ -71,25 +72,28 @@ impl ScreenshotExecutor{
             match rx.recv(){
                 Ok(msg) => {
                     if let ScreenshotMessage::Print( pd) = msg {
-                        Self::thread_executor_delay(pd.delay);
+
+                        let configuration_lock = configuration.read().unwrap();
+                        Self::thread_executor_delay(configuration_lock.get_delay());
+                        drop(configuration_lock);
 
                         /*Results message*/
                         let mut msg : ScreenshotMessage;
 
                         if pd.all_screen {
                             let screens = Screen::all().unwrap();
-                            let mut results = Vec::<Image>::with_capacity(screens.len());
+                            let mut results = Vec::<anyhow::Result<Image>>::with_capacity(screens.len());
                             for s in screens.into_iter()  {
-                                results.push(s.capture().unwrap());
+                                results.push(s.capture());
                             }
                             msg = ScreenshotMessage::Images(results);
                         }
                         else{
                             let s = Screen::new(&pd.di.unwrap());
                             let img = match pd.ca {
-                                None => {s.capture().unwrap()}
+                                None => {s.capture()}
                                 Some(area) => {
-                                    s.capture_area(area.x,area.y,area.width,area.height).unwrap()
+                                    s.capture_area(area.x,area.y,area.width,area.height)
                                 }
                             };
                             msg = ScreenshotMessage::Image(img);
@@ -113,7 +117,7 @@ impl ScreenshotExecutor{
     }
 
 
-    pub fn new() -> (Self, ScreenshotExecutorThread)
+    pub fn new(configuration: Arc<RwLock<Configuration>>) -> (Self, ScreenshotExecutorThread)
     {
         /*channel from ti to the thread screenshot executor*/
         let (tx, rx) = sync_channel::<ScreenshotMessage>(REQUESTS);
@@ -122,7 +126,7 @@ impl ScreenshotExecutor{
         let (tx_t, rx_t) = sync_channel::<ScreenshotMessage>(REQUESTS);
 
         /*thread executor*/
-        let thread : JoinHandle<usize> = spawn(move || Self::thread_executor(tx_t, rx));
+        let thread : JoinHandle<usize> = spawn(move || Self::thread_executor(tx_t, rx, configuration));
 
         (Self{
             rx: rx_t,
@@ -132,40 +136,38 @@ impl ScreenshotExecutor{
         })
     }
 
-    pub fn screenshot(&self, di : DisplayInfo, delay : Option<Duration>, area : Option<CaptureArea> ) -> Option<Image>
+    pub fn screenshot(&self, di : DisplayInfo, area : Option<CaptureArea> ) -> anyhow::Result<Image>
     {
 
         /*Each thread can have own sender. MSSR */
         let tx = self.tx.clone();
 
         let pd = PrintData{
-            delay,
             di : Some(di),
             ca: area,
             all_screen: false,
         };
 
         let m_send = ScreenshotMessage::Print(pd);
-        tx.send(m_send).ok()?;
+        tx.send(m_send)?;
 
-        if let ScreenshotMessage::Image(img) = self.rx.recv().ok()?{
-            /*Explicit drop of tx*/
-            drop(tx);
-            return Some(img);
+        match  self.rx.recv()?{
+            ScreenshotMessage::Image(img) => {
+                drop(tx);
+                img
+            }
+            _ => {
+                panic!("Error in intra-thread message format");
+            }
         }
-
-        /*Explicit drop of tx*/
-        drop(tx);
-        None
     }
 
-    pub fn screenshot_all(&self, delay : Option<Duration>) -> Option<Vec<Image>>
+    pub fn screenshot_all(&self) -> Option<Vec<anyhow::Result<Image>>>
     {
         /*Each thread can have own sender. MSSR */
         let tx = self.tx.clone();
 
         let pd = PrintData{
-            delay,
             ca: None,
             all_screen: true,
             di: None,

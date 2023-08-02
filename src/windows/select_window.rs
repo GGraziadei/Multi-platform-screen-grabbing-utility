@@ -2,10 +2,12 @@ use eframe::epaint::{ColorImage, hex_color, Rounding, Shadow, Stroke};
 use egui::{CentralPanel, Color32, Context, Id, LayerId, Order, pos2, Pos2, Rect, Vec2};
 use egui::accesskit::Role::Caption;
 use egui_extras::RetainedImage;
+use egui_modal::{Icon, Modal};
 use env_logger::init;
-use screenshots::Compression;
-use crate::window::Content;
-use crate::window::WindowType::Screenshot;
+use log::{error, info};
+use screenshots::{Compression, Image};
+use crate::window::{Content, WindowType};
+use crate::window::WindowType::{Main, Screenshot};
 use crate::screenshots::CaptureArea;
 
 #[derive(Clone, Copy, Debug)]
@@ -61,23 +63,35 @@ impl Content{
 					let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_pos"));
 					let curr_pos = mem.data.get_temp::<Pos2>(Id::new("curr_pos"));
 					if init_pos.is_some() && curr_pos.is_some(){
-						println!("{:?}", init_pos);
-						println!("{:?}", curr_pos);
 						let di = self.get_current_screen_di(_frame);
 						let x = di.x + init_pos.unwrap().x as i32;
 						let y = di.y + init_pos.unwrap().y as i32;
 						let width = (curr_pos.unwrap().x - init_pos.unwrap().x) as u32;
 						let height = (curr_pos.unwrap().y - init_pos.unwrap().y) as u32;
 						let ca = CaptureArea::new(x, y, width, height);
-						println!("{:?}", di);
-						let screenshot = self.get_se().screenshot(di, None,ca).unwrap();
-						let img_bytes = screenshot.rgba().clone();
-						let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
-						mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-						mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-						mem.data.insert_temp(Id::from("width"), screenshot.width());
-						mem.data.insert_temp(Id::from("height"), screenshot.height());
-						self.set_win_type(Screenshot);
+						info!("Capture area: {:?}", di);
+						match self.get_se().screenshot(di,ca) {
+							Ok(screenshot) => {
+								let img_bytes = screenshot.rgba().clone();
+								let img_bytes_fast = screenshot.to_png(None).unwrap();
+								mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+								mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+								mem.data.insert_temp(Id::from("width"), screenshot.width());
+								mem.data.insert_temp(Id::from("height"), screenshot.height());
+								self.set_win_type(Screenshot);
+							}
+							Err(error) => {
+								error!("{}",error);
+								/*
+								Modal::new(ctx, "error_alert").open_dialog(
+									Some("Error during screenshot print."),
+									Some(error),
+									Some(Icon::Error));
+
+								 */
+								self.set_win_type(WindowType::Main);
+							}
+						};
 					}
 				});
 			}

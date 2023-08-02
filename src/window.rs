@@ -2,6 +2,7 @@ use std::default::Default;
 use std::sync::{Arc, Mutex, RwLock};
 use eframe::{egui, run_native, Theme};
 use egui::*;
+use egui_modal::Modal;
 use crate::configuration::Configuration;
 use crate::image_formatter::{EncoderThread};
 use crate::screenshots::{ScreenshotExecutor};
@@ -78,4 +79,3 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     Box::new(move |_cc| Box::<Content>::new(content)),
   ).expect("Error during gui thread init.");
 }
-

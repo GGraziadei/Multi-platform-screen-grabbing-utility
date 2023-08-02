@@ -17,7 +17,7 @@ impl ThreadManager{
 
     fn init() -> (Arc<RwLock<Configuration>>,Arc<Mutex<Vec<EncoderThread>>>)
     {
-        //assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
+        assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         env_logger::init();
         (Arc::new(RwLock::new(Configuration::new()))
             ,Arc::new(Mutex::new(Vec::<EncoderThread>::new())))
@@ -26,8 +26,8 @@ impl ThreadManager{
     pub fn new() -> Self
     {
 
-        let (screenshot_executor,executor_thread) = ScreenshotExecutor::new();
         let (configuration, encoders) = Self::init();
+        let (screenshot_executor,executor_thread) = ScreenshotExecutor::new(configuration.clone());
 
         let tm = ThreadManager{
             configuration : configuration.clone(),
