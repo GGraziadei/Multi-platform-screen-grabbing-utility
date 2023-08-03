@@ -3,6 +3,7 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::thread::{JoinHandle,  spawn};
 use arboard::{Clipboard, ImageData};
+use egui::ColorImage;
 use egui_extras::RetainedImage;
 use image::{ColorType, Frame, ImageBuffer, ImageError, ImageFormat, ImageResult, load_from_memory, load_from_memory_with_format};
 use image::ColorType::Rgba8;
@@ -44,6 +45,18 @@ impl From<Image> for ImageFormatter {
             width: value.width(),
             height: value.height(),
             color_type: Rgba8
+        }
+    }
+}
+
+impl From<ColorImage> for ImageFormatter {
+    fn from(value: ColorImage) -> Self
+    {
+        Self{
+            buffer: Vec::from(value.as_raw().clone()),
+            width: value.width() as u32,
+            height: value.height() as u32,
+            color_type: ColorType::Rgba32F,
         }
     }
 }
