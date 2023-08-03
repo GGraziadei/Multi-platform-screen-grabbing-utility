@@ -4,7 +4,7 @@ use eframe::{egui, run_native, Theme};
 use egui::*;
 use egui_modal::Modal;
 use crate::configuration::Configuration;
-use crate::image_formatter::{EncoderThread};
+use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{ScreenshotExecutor};
 
 pub enum WindowType {
@@ -20,7 +20,8 @@ pub struct Content {
   encoders : Arc<Mutex<Vec<EncoderThread>>>,
   text: String,
   close: bool,
-  window_type: WindowType
+  window_type: WindowType,
+  pub(crate) region: Option<Rect>
 }
 
 impl Content {
@@ -36,6 +37,16 @@ impl Content {
 }
 
 impl eframe::App for Content {
+  fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
+    if self.region.is_some(){
+      let colorimage = _frame.screenshot();
+      let c = colorimage.unwrap().region(&self.region.unwrap(),None);
+      let image = ImageFormatter::from(c);
+      image.to_clipboard();
+      self.region = None;
+    }
+  }
+  
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
     match self.window_type{
       WindowType::Main => self.main_window(ctx, _frame),
@@ -71,6 +82,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     text: "".to_string(),
     close: false,
     window_type: WindowType::Main,
+    region: None
   };
 
   run_native(

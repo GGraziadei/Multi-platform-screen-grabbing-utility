@@ -2,7 +2,8 @@ use std::thread::current;
 use eframe::emath::{Align, Vec2};
 use egui::{Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
 use log::{error, info};
-use screenshots::{Compression, DisplayInfo};
+use mouse_position::mouse_position::Mouse;
+use screenshots::{Compression, DisplayInfo, Screen};
 use crate::window::{Content};
 use crate::window::WindowType::*;
 use crate::image_combiner::ImageCombiner;
@@ -12,6 +13,7 @@ impl Content {
 	pub fn main_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let window_size = _frame.info().window_info.size;
     let bg_color = ctx.style().visuals.panel_fill;
+    
 
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::symmetric(0.0, 20.0), ..Default::default()})
@@ -80,8 +82,8 @@ impl Content {
 	}
 
   pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-    let mut di = self.get_current_screen_di(_frame);
-    match self.get_se().screenshot(di,  CaptureArea::new(0,0, di.width, di.height)) {
+    let mut di = self.get_current_screen_di(_frame).unwrap();
+    match self.get_se().screenshot(di,  None) {
       Ok(screenshot) => {
         let img_bytes = screenshot.rgba().clone();
         let img_bytes_fast = screenshot.to_png(None).unwrap();
@@ -101,16 +103,17 @@ impl Content {
   }
 
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-    let mut di = self.get_current_screen_di(_frame);
-    match self.get_se().screenshot(di,  CaptureArea::new(0,0, di.width, di.height)) {
+    let di = self.get_current_screen_di(_frame).unwrap();
+    match self.get_se().screenshot(di,  None) {
       Ok(screenshot) => {
         let img_bytes = screenshot.rgba().clone();
-        let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
+        let img_bytes_fast = screenshot.to_png(None).unwrap();
         ctx.memory_mut(|mem|{
           mem.data.insert_temp(Id::from("screenshot"), img_bytes);
           mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
           mem.data.insert_temp(Id::from("width"), screenshot.width());
           mem.data.insert_temp(Id::from("height"), screenshot.height());
+          mem.data.insert_temp(Id::from("di"), di);
         });
         self.set_win_type(Select);
       }
@@ -132,7 +135,7 @@ impl Content {
 
     let screenshot = ImageCombiner::combine(images).unwrap();
     let img_bytes = screenshot.rgba().clone();
-    let img_bytes_fast = screenshot.to_png(Some(Compression::Best)).unwrap();
+    let img_bytes_fast = screenshot.to_png(None).unwrap();
     ctx.memory_mut(|mem|{
       mem.data.insert_temp(Id::from("screenshot"), img_bytes);
       mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
@@ -142,20 +145,10 @@ impl Content {
     self.set_win_type(Screenshot);
   }
 
-  pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> DisplayInfo {
-    let mut di = DisplayInfo::from_point(0,0).unwrap();
-    for (i, display) in DisplayInfo::all().unwrap().iter().enumerate(){
-      let frame_pos = _frame.info().window_info.position.unwrap();
-      if
-         (display.x < frame_pos.x as i32) &&
-         (frame_pos.x as i32) < (display.x + display.width as i32) &&
-         (display.y < frame_pos.y as i32) &&
-         (frame_pos.y as i32) < (display.y + display.height as i32)
-      {
-        di = display.clone();
-        break;
-      }
+  pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
+    match Mouse::get_mouse_position() {
+      Mouse::Position { x, y } => DisplayInfo::from_point(x, y).ok(),
+      Mouse::Error => panic!("Error in mouse position"),
     }
-    di
   }
 }
