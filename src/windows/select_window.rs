@@ -40,7 +40,6 @@ impl Content{
 
       _frame.set_decorations(false);
       _frame.set_fullscreen(true);
-      _frame.set_maximized(true);
 			ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
 
 			ctx.memory(|mem|{
