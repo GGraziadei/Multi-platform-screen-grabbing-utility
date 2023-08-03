@@ -72,32 +72,33 @@ impl Content{
 						info!("{}", y);
 						info!("{}", width);
 						info!("{}", height);
-						_frame.request_screenshot();
-						self.region = Some(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
+						// _frame.request_screenshot();
+						// self.region = Some(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
 						
 						// colorimage.region(Rect::from_min_size(), None);
-						// match self.get_se().screenshot(di,ca) {
-						// 	Ok(screenshot) => {
-						// 		let img_bytes = screenshot.rgba().clone();
-						// 		let img_bytes_fast = screenshot.to_png(None).unwrap();
-						// 		mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-						// 		mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-						// 		mem.data.insert_temp(Id::from("width"), screenshot.width());
-						// 		mem.data.insert_temp(Id::from("height"), screenshot.height());
-						// 		self.set_win_type(Screenshot);
-						// 	}
-						// 	Err(error) => {
-						// 		error!("{}",error);
-						// 		/*
-						// 		Modal::new(ctx, "error_alert").open_dialog(
-						// 			Some("Error during screenshot print."),
-						// 			Some(error),
-						// 			Some(Icon::Error));
-						//
-						// 		 */
-						// 		self.set_win_type(WindowType::Main);
-						// 	}
-						// };
+						let ca = CaptureArea::new(x, y, width as u32, height as u32);
+						match self.get_se().screenshot(di,ca) {
+							Ok(screenshot) => {
+								let img_bytes = screenshot.rgba().clone();
+								let img_bytes_fast = screenshot.to_png(None).unwrap();
+								mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+								mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+								mem.data.insert_temp(Id::from("width"), screenshot.width());
+								mem.data.insert_temp(Id::from("height"), screenshot.height());
+								self.set_win_type(Screenshot);
+							}
+							Err(error) => {
+								error!("{}",error);
+								/*
+								Modal::new(ctx, "error_alert").open_dialog(
+									Some("Error during screenshot print."),
+									Some(error),
+									Some(Icon::Error));
+						
+								 */
+								self.set_win_type(WindowType::Main);
+							}
+						};
 					}
 				});
 			}
