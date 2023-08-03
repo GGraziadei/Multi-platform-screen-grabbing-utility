@@ -31,7 +31,6 @@ impl CaptureArea{
 struct PrintData{
     di : Option<DisplayInfo>,
     ca : Option<CaptureArea>,
-    all_screen: bool
 }
 
 enum ScreenshotMessage {
@@ -80,7 +79,7 @@ impl ScreenshotExecutor{
                         /*Results message*/
                         let mut msg : ScreenshotMessage;
 
-                        if pd.all_screen {
+                        if pd.di.is_none() {
                             let screens = Screen::all().unwrap();
                             let mut results = Vec::<anyhow::Result<Image>>::with_capacity(screens.len());
                             for s in screens.into_iter()  {
@@ -145,7 +144,6 @@ impl ScreenshotExecutor{
         let pd = PrintData{
             di : Some(di),
             ca: area,
-            all_screen: false,
         };
 
         let m_send = ScreenshotMessage::Print(pd);
@@ -169,7 +167,6 @@ impl ScreenshotExecutor{
 
         let pd = PrintData{
             ca: None,
-            all_screen: true,
             di: None,
         };
 
