@@ -33,17 +33,24 @@ impl Content {
 				mem.data.insert_temp(Id::from("first_render"), false);
 			});
 		}
+		
+		if self.get_colorimage().is_some(){
+			r_image = RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap());
+			screenshot_ok = true;
+		}
+		else {
+			ctx.memory(|mem|{
+				let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
+				if fast_bytes.is_some(){
+					r_image = RetainedImage::from_image_bytes(
+						"screenshot",
+						fast_bytes.unwrap().as_slice()
+					).unwrap();
+					screenshot_ok = true;
+				}
+			});
+		}
 
-		ctx.memory(|mem|{
-			let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-			if fast_bytes.is_some(){
-				r_image = RetainedImage::from_image_bytes(
-					"screenshot",
-					fast_bytes.unwrap().as_slice()
-				).unwrap();
-				screenshot_ok = true;
-			}
-		});
 
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
@@ -192,34 +199,5 @@ impl Content {
 					});
 			});
 	}
-
-	fn save_image(&mut self, ctx: &Context) {
-		let mut image = screenshots::Image::new(0,0,vec![]);
-		ctx.memory(|mem|{
-			let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-			if image_bytes.is_some(){
-				let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-				let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-				image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-			}
-			let imgf = ImageFormatter::from(image);
-			imgf.save_fmt("/home/bernard/Scrivania/screenshot".to_string(), ImageFmt::PNG);
-		});
-	}
-
-	fn copy_image(&mut self, ctx: &Context) {
-		let mut image = screenshots::Image::new(0,0,vec![]);
-		ctx.memory(|mem|{
-			let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-			if image_bytes.is_some(){
-				let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-				let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-				image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-			}
-			let imgf = ImageFormatter::from(image);
-			imgf.to_clipboard();
-		});
-	}
-
 }
 

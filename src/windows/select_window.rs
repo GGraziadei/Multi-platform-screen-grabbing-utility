@@ -68,12 +68,8 @@ impl Content{
 						let y = di.y + init_pos.unwrap().y as i32;
 						let width = (curr_pos.unwrap().x - init_pos.unwrap().x);
 						let height = (curr_pos.unwrap().y - init_pos.unwrap().y);
-						info!("{}", x);
-						info!("{}", y);
-						info!("{}", width);
-						info!("{}", height);
 						_frame.request_screenshot();
-						self.region = Some(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
+						self.set_region(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
 						
 						// colorimage.region(Rect::from_min_size(), None);
 						// match self.get_se().screenshot(di,ca) {
@@ -101,48 +97,51 @@ impl Content{
 					}
 				});
 			}
+	    
+	    else {
+	      let mut init_pos = pos2(0.0,0.0);
+	      let mut curr_pos = ctx.input(|i| {
+	        if i.pointer.primary_down(){
+	          if i.pointer.press_origin().is_some(){
+	            init_pos = i.pointer.press_origin().unwrap();
+	          }
+	          if i.pointer.hover_pos().is_some(){
+	            let curr_pos = i.pointer.hover_pos().unwrap();
+	            curr_pos
+	          }
+	          else { pos2(0.0,0.0) }
+	        }
+	        else { pos2(0.0,0.0) }
+	      });
+	      if curr_pos != init_pos {
+					if curr_pos.x < init_pos.x{
+						let tmp = init_pos.x;
+						init_pos.x = curr_pos.x;
+						curr_pos.x = tmp;
+					}
+					if curr_pos.y < init_pos.y {
+						let tmp = init_pos.y;
+						init_pos.y = curr_pos.y;
+						curr_pos.y = tmp;
+					}
+					ctx.memory_mut(|mem| {
+						mem.data.insert_temp(Id::new("init_pos"), init_pos);
+						mem.data.insert_temp(Id::new("curr_pos"), curr_pos);
+					});
+					painter.rect_filled(Rect::from_min_max(pos2(0.0,0.0), pos2(init_pos.x, window_size.y)), 0.0, hex_color!("#00000064"));
+					painter.rect_filled(Rect::from_min_max(pos2(init_pos.x, 0.0), pos2(curr_pos.x, init_pos.y)), 0.0, hex_color!("#00000064"));
+					painter.rect_filled(Rect::from_min_max(pos2(init_pos.x, curr_pos.y), pos2(curr_pos.x, window_size.y)), 0.0, hex_color!("#00000064"));
+					painter.rect_filled(Rect::from_min_max(pos2(curr_pos.x, 0.0), pos2(window_size.x, window_size.y)), 0.0, hex_color!("#00000064"));
+					init_pos = pos2(init_pos.x-1.5, init_pos.y-1.5);
+					curr_pos = pos2(curr_pos.x+1.5, curr_pos.y+1.5);
+					painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.5, Color32::GREEN));
+	      }
+	      else {
+	        painter.rect_filled(Rect::from_min_size(pos2(0.0,0.0), window_size), 0.0, hex_color!("#00000064"));
+	      }
+	    }
 
 
-      let mut init_pos = pos2(0.0,0.0);
-      let mut curr_pos = ctx.input(|i| {
-        if i.pointer.primary_down(){
-          if i.pointer.press_origin().is_some(){
-            init_pos = i.pointer.press_origin().unwrap();
-          }
-          if i.pointer.hover_pos().is_some(){
-            let curr_pos = i.pointer.hover_pos().unwrap();
-            curr_pos
-          }
-          else { pos2(0.0,0.0) }
-        }
-        else { pos2(0.0,0.0) }
-      });
-      if curr_pos != init_pos {
-				if curr_pos.x < init_pos.x{
-					let tmp = init_pos.x;
-					init_pos.x = curr_pos.x;
-					curr_pos.x = tmp;
-				}
-				if curr_pos.y < init_pos.y {
-					let tmp = init_pos.y;
-					init_pos.y = curr_pos.y;
-					curr_pos.y = tmp;
-				}
-				ctx.memory_mut(|mem| {
-					mem.data.insert_temp(Id::new("init_pos"), init_pos);
-					mem.data.insert_temp(Id::new("curr_pos"), curr_pos);
-				});
-				painter.rect_filled(Rect::from_min_max(pos2(0.0,0.0), pos2(init_pos.x, window_size.y)), 0.0, hex_color!("#00000064"));
-				painter.rect_filled(Rect::from_min_max(pos2(init_pos.x, 0.0), pos2(curr_pos.x, init_pos.y)), 0.0, hex_color!("#00000064"));
-				painter.rect_filled(Rect::from_min_max(pos2(init_pos.x, curr_pos.y), pos2(curr_pos.x, window_size.y)), 0.0, hex_color!("#00000064"));
-				painter.rect_filled(Rect::from_min_max(pos2(curr_pos.x, 0.0), pos2(window_size.x, window_size.y)), 0.0, hex_color!("#00000064"));
-				init_pos = pos2(init_pos.x-1.5, init_pos.y-1.5);
-				curr_pos = pos2(curr_pos.x+1.5, curr_pos.y+1.5);
-				painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.5, Color32::GREEN));
-      }
-      else {
-        painter.rect_filled(Rect::from_min_size(pos2(0.0,0.0), window_size), 0.0, hex_color!("#00000064"));
-      }
     });
 	}
 }
