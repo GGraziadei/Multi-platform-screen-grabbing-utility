@@ -76,23 +76,28 @@ impl Content {
   }
   
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-    let di = self.get_current_screen_di(_frame).unwrap();
-    match self.get_se().screenshot(di,  None) {
-      Ok(screenshot) => {
-        let img_bytes = screenshot.rgba().clone();
-        let img_bytes_fast = screenshot.to_png(None).unwrap();
-        ctx.memory_mut(|mem|{
-          mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-          mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-          mem.data.insert_temp(Id::from("width"), screenshot.width());
-          mem.data.insert_temp(Id::from("height"), screenshot.height());
-          mem.data.insert_temp(Id::from("di"), di);
-        });
-        self.set_win_type(Select);
+    let di = self.get_current_screen_di(_frame);
+    if di.is_some(){
+      match self.get_se().screenshot(di.unwrap(),None) {
+        Ok(screenshot) => {
+          let img_bytes = screenshot.rgba().clone();
+          let img_bytes_fast = screenshot.to_png(None).unwrap();
+          ctx.memory_mut(|mem|{
+            mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+            mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+            mem.data.insert_temp(Id::from("width"), screenshot.width());
+            mem.data.insert_temp(Id::from("height"), screenshot.height());
+            mem.data.insert_temp(Id::from("di"), di.unwrap());
+          });
+          self.set_win_type(Select);
+        }
+        Err(error) => {
+          error!("{}",error);
+        }
       }
-      Err(error) => {
-        error!("{}",error);
-      }
+    }
+    else {
+      println!("Errore nella selezione dello schermo.");
     }
   }
   

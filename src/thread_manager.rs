@@ -1,3 +1,4 @@
+use std::os;
 use std::sync::{Arc, Mutex, RwLock};
 use log::{error, info};
 use thread_priority::{set_current_thread_priority, ThreadPriority};
@@ -17,7 +18,7 @@ impl ThreadManager{
 
     fn init() -> (Arc<RwLock<Configuration>>,Arc<Mutex<Vec<EncoderThread>>>)
     {
-        assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
+        // assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         env_logger::init();
         (Arc::new(RwLock::new(Configuration::new()))
             ,Arc::new(Mutex::new(Vec::<EncoderThread>::new())))

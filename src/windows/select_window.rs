@@ -1,6 +1,7 @@
 use eframe::epaint::{ColorImage, hex_color, Rounding, Shadow, Stroke};
 use egui::{CentralPanel, Color32, Context, Id, LayerId, Order, pos2, Pos2, Rect, Vec2};
 use egui::accesskit::Role::Caption;
+use egui::os::OperatingSystem;
 use egui_extras::RetainedImage;
 use egui_modal::{Icon, Modal};
 use env_logger::init;
@@ -28,6 +29,7 @@ impl Content{
 	pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
 		
 		let di = ctx.memory(|mem| mem.data.get_temp::<DisplayInfo>(Id::from("di")).unwrap());
+		let os = ctx.os();
 		
 		let p_frame = egui::Frame{
       inner_margin: Default::default(),
@@ -64,14 +66,28 @@ impl Content{
 
 			if ctx.input(|i| i.pointer.primary_released()){
 				ctx.memory_mut(|mem|{
-					let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_mouse_pos"));
-					// let curr_pos = mem.data.get_temp::<Pos2>(Id::new("curr_pos"));
-					
-					let mouse_pos = Mouse::get_mouse_position();
-					let curr_pos = match mouse_pos{
-						Mouse::Position { x, y } => { Some(pos2((x - di.x) as f32, (y - di.y) as f32)) }
-						Mouse::Error => { None }
+					let init_pos = match os {
+					     OperatingSystem::Windows => {
+					 			mem.data.get_temp::<Pos2>(Id::new("init_mouse_pos"))
+							},
+							_ => {
+					 			mem.data.get_temp::<Pos2>(Id::new("init_pos"))
+							}
 					};
+					let curr_pos = match os{
+						OperatingSystem::Windows => {
+							let mouse_pos = Mouse::get_mouse_position();
+							let pos = match mouse_pos{
+								Mouse::Position { x, y } => Some(pos2((x - di.x) as f32, (y - di.y) as f32)),
+								Mouse::Error => None
+							};
+							pos
+						},
+						_ => {
+							mem.data.get_temp::<Pos2>(Id::new("curr_pos"))
+						}
+					};
+
 					if init_pos.is_some() && curr_pos.is_some(){
 						let x = init_pos.unwrap().x as i32;
 						let y = init_pos.unwrap().y as i32;
@@ -112,6 +128,10 @@ impl Content{
 			          Mouse::Error => { None }
 		          };
 	          }
+						println!("{:?}", di);
+						println!("{:?}", init_pos);
+						println!("{:?}", init_mouse_pos);
+
           }
           if i.pointer.hover_pos().is_some(){
             let curr_pos = i.pointer.hover_pos().unwrap();
