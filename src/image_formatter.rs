@@ -56,7 +56,7 @@ impl From<ColorImage> for ImageFormatter {
             buffer: Vec::from(value.as_raw().clone()),
             width: value.width() as u32,
             height: value.height() as u32,
-            color_type: ColorType::Rgba32F,
+            color_type: ColorType::Rgba8,
         }
     }
 }
