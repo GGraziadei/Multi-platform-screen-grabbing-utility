@@ -100,14 +100,14 @@ impl ScreenshotExecutor{
 
                         match tx.send(msg)  {
                             Ok(()) => {}
-                            Err(e) => {
+                            Err(_e) => {
                                 info!("ScreenshotExecutor: thread_executor return.");
                                 return 1;
                             }
                         }
                     }
                 }
-                Err(e) => {
+                Err(_e) => {
                     info!("ScreenshotExecutor: thread_executor return.");
                     return 0;
                 }

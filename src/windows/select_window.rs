@@ -1,29 +1,13 @@
-use eframe::epaint::{ColorImage, hex_color, Rounding, Shadow, Stroke};
+use eframe::epaint::{ColorImage, hex_color, Stroke};
 use egui::{CentralPanel, Color32, Context, Id, LayerId, Order, pos2, Pos2, Rect, Vec2};
-use egui::accesskit::Role::Caption;
 use egui::os::OperatingSystem;
 use egui_extras::RetainedImage;
-use egui_modal::{Icon, Modal};
-use env_logger::init;
-use log::{error, info};
+use log::{error};
 use mouse_position::mouse_position::Mouse;
-use screenshots::{Compression, DisplayInfo, Image};
-use crate::image_formatter::ImageFormatter;
-use crate::window::{Content, WindowType};
+use screenshots::{DisplayInfo};
+use crate::window::{Content};
 use crate::window::WindowType::{Main, Screenshot};
 use crate::screenshots::CaptureArea;
-
-#[derive(Clone, Copy, Debug)]
-struct LineSegment {
-  points: [Pos2; 2],
-  stroke: Stroke,
-}
-
-impl LineSegment {
-  fn new(points: [Pos2; 2], stroke: Stroke) -> Self {
-    Self { points, stroke }
-  }
-}
 
 impl Content{
 	pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -31,16 +15,7 @@ impl Content{
 		let di = ctx.memory(|mem| mem.data.get_temp::<DisplayInfo>(Id::from("di")).unwrap());
 		let os = ctx.os();
 		
-		let p_frame = egui::Frame{
-      inner_margin: Default::default(),
-      outer_margin: Default::default(),
-      rounding: Default::default(),
-      shadow: Default::default(),
-      fill: Color32::GOLD,
-      stroke: Default::default(),
-    };
-
-    CentralPanel::default().show(ctx, |ui| {
+    CentralPanel::default().show(ctx, |_ui| {
       let mut r_image = RetainedImage::from_color_image("", ColorImage::example());
 			let window_size: Vec2 = Vec2::new(_frame.info().window_info.size.x, _frame.info().window_info.size.y);
 			let mut screenshot_ok = false;
@@ -108,7 +83,7 @@ impl Content{
 							}
 							Err(error) => {
 								error!("{}",error);
-								self.set_win_type(WindowType::Main);
+								self.set_win_type(Main);
 							}
 						};
 					}
