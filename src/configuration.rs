@@ -8,6 +8,8 @@ use egui::epaint::ahash::HashMap;
 use egui::Key;
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
+use chrono::Local;
+
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
@@ -130,16 +132,33 @@ impl KeyCombo{
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Configuration{
     app_name : String,
     save_path : String,
+    filename_pattern : String,
     image_format : ImageFmt,
     coordinates : (usize,usize),
     height: usize,
     width: usize,
     delay: Option<Duration>,
     hot_key_map : HashMap<AcquireMode, KeyCombo>
+}
+
+impl Default for Configuration{
+    fn default() -> Self {
+        Self{
+            app_name: "MPSGU".to_string(),
+            save_path: "".to_string(),
+            filename_pattern: "Screenshot_%Y-%m-%d_%H:%M:%S".to_string(),
+            image_format: ImageFmt::PNG,
+            coordinates: (0, 0),
+            height: 0,
+            width: 0,
+            delay: None,
+            hot_key_map: Default::default(),
+        }
+    }
 }
 
 const SETTINGS_FILE: &'static str = "settings.json";
@@ -164,6 +183,7 @@ impl Configuration{
     pub fn bulk(
         app_name : String,
         save_path : String,
+        filename_pattern : String,
         image_format : ImageFmt,
         coordinates : (usize, usize),
         height: usize,
@@ -175,6 +195,7 @@ impl Configuration{
         let c = Self{
             app_name,
             save_path,
+            filename_pattern,
             image_format,
             coordinates,
             height,
@@ -278,6 +299,18 @@ impl Configuration{
     pub fn set_hot_key_map(&mut self, map: HashMap<AcquireMode, KeyCombo>) -> Option<bool>
     {
         self.hot_key_map = map;
+        self.write()?;
+        Some(true)
+    }
+
+    pub fn get_filename(&self) -> Option<String>
+    {
+        Some(chrono::Local::now().format(&self.filename_pattern.clone()).to_string())
+    }
+
+    pub fn set_filename_pattern(&mut self, p : String) -> Option<bool>
+    {
+        self.filename_pattern = p;
         self.write()?;
         Some(true)
     }
