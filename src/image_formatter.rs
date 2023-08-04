@@ -11,7 +11,6 @@ use image::error::{EncodingError, ImageFormatHint};
 use image::ImageFormat::{Jpeg, Png, Gif};
 use log::{info};
 use screenshots::Image;
-use thread_priority::{set_current_thread_priority, ThreadPriority};
 use crate::configuration::ImageFmt;
 
 #[derive(Debug)]
@@ -67,9 +66,6 @@ impl ImageFormatter{
 
     fn encoder_thread(formatter : ImageFormatter, path : String, format : ImageFormat) -> ImageResult<()>
     {
-        /*Assign low priority to the thread*/
-        assert!(set_current_thread_priority(ThreadPriority::Min).is_ok());
-
         /*Screenshots crate produces image in PNG format. this thread encodes
          image in final format  with image crate */
         let p = Path::new(&path);

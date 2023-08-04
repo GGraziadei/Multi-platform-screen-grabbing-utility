@@ -6,7 +6,6 @@ use std::time::Duration;
 use anyhow::Error;
 use log::info;
 use screenshots::{DisplayInfo, Image, Screen};
-use thread_priority::{set_current_thread_priority, ThreadPriority};
 use crate::configuration::Configuration;
 
 pub struct CaptureArea{
@@ -65,7 +64,6 @@ impl ScreenshotExecutor{
 
     fn thread_executor(tx : SyncSender<ScreenshotMessage>, rx : Receiver<ScreenshotMessage>, configuration: Arc<RwLock<Configuration>>) -> usize
     {
-        //assert!(set_current_thread_priority(ThreadPriority::Max).is_ok());
         info!("ScreenshotExecutor: thread_executor start");
         loop {
             match rx.recv(){
