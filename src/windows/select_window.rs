@@ -5,6 +5,7 @@ use egui_extras::RetainedImage;
 use egui_modal::{Icon, Modal};
 use env_logger::init;
 use log::{error, info};
+use mouse_position::mouse_position::Mouse;
 use screenshots::{Compression, DisplayInfo, Image};
 use crate::image_formatter::ImageFormatter;
 use crate::window::{Content, WindowType};
@@ -25,6 +26,9 @@ impl LineSegment {
 
 impl Content{
 	pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+		
+		let di = ctx.memory(|mem| mem.data.get_temp::<DisplayInfo>(Id::from("di")).unwrap());
+		
 		let p_frame = egui::Frame{
       inner_margin: Default::default(),
       outer_margin: Default::default(),
@@ -60,23 +64,21 @@ impl Content{
 
 			if ctx.input(|i| i.pointer.primary_released()){
 				ctx.memory_mut(|mem|{
-					let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_pos"));
-					let curr_pos = mem.data.get_temp::<Pos2>(Id::new("curr_pos"));
+					let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_mouse_pos"));
+					// let curr_pos = mem.data.get_temp::<Pos2>(Id::new("curr_pos"));
+					
+					let mouse_pos = Mouse::get_mouse_position();
+					let curr_pos = match mouse_pos{
+						Mouse::Position { x, y } => { Some(pos2((x - di.x) as f32, (y - di.y) as f32)) }
+						Mouse::Error => { None }
+					};
 					if init_pos.is_some() && curr_pos.is_some(){
-						let di = mem.data.get_temp::<DisplayInfo>(Id::from("di")).unwrap();
-						let x = di.x + init_pos.unwrap().x as i32;
-						let y = di.y + init_pos.unwrap().y as i32;
+						let x = init_pos.unwrap().x as i32;
+						let y = init_pos.unwrap().y as i32;
 						let width = (curr_pos.unwrap().x - init_pos.unwrap().x);
 						let height = (curr_pos.unwrap().y - init_pos.unwrap().y);
-						info!("{}", x);
-						info!("{}", y);
-						info!("{}", width);
-						info!("{}", height);
-						// _frame.request_screenshot();
-						// self.region = Some(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
-						
-						// colorimage.region(Rect::from_min_size(), None);
 						let ca = CaptureArea::new(x, y, width as u32, height as u32);
+						
 						match self.get_se().screenshot(di,ca) {
 							Ok(screenshot) => {
 								let img_bytes = screenshot.rgba().clone();
@@ -85,17 +87,11 @@ impl Content{
 								mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
 								mem.data.insert_temp(Id::from("width"), screenshot.width());
 								mem.data.insert_temp(Id::from("height"), screenshot.height());
+								mem.data.remove::<Pos2>(Id::from("init_mouse_pos"));
 								self.set_win_type(Screenshot);
 							}
 							Err(error) => {
 								error!("{}",error);
-								/*
-								Modal::new(ctx, "error_alert").open_dialog(
-									Some("Error during screenshot print."),
-									Some(error),
-									Some(Icon::Error));
-						
-								 */
 								self.set_win_type(WindowType::Main);
 							}
 						};
@@ -104,11 +100,18 @@ impl Content{
 			}
 
 
-      let mut init_pos = pos2(0.0,0.0);
+      let mut init_mouse_pos = ctx.memory(|mem| mem.data.get_temp::<Pos2>(Id::from("init_mouse_pos")));
+	    let mut init_pos = pos2(0.0,0.0);
       let mut curr_pos = ctx.input(|i| {
         if i.pointer.primary_down(){
           if i.pointer.press_origin().is_some(){
             init_pos = i.pointer.press_origin().unwrap();
+	          if init_mouse_pos.is_none(){
+		          init_mouse_pos = match Mouse::get_mouse_position(){
+			          Mouse::Position { x, y } => { Some(pos2((x - di.x) as f32, (y - di.y) as f32)) }
+			          Mouse::Error => { None }
+		          };
+	          }
           }
           if i.pointer.hover_pos().is_some(){
             let curr_pos = i.pointer.hover_pos().unwrap();
@@ -118,6 +121,11 @@ impl Content{
         }
         else { pos2(0.0,0.0) }
       });
+	    
+	    if init_mouse_pos.is_some(){
+	      ctx.memory_mut(|mem| mem.data.insert_temp(Id::new("init_mouse_pos"), init_mouse_pos.unwrap()));
+	    }
+		    
       if curr_pos != init_pos {
 				if curr_pos.x < init_pos.x{
 					let tmp = init_pos.x;
@@ -139,7 +147,7 @@ impl Content{
 				painter.rect_filled(Rect::from_min_max(pos2(curr_pos.x, 0.0), pos2(window_size.x, window_size.y)), 0.0, hex_color!("#00000064"));
 				init_pos = pos2(init_pos.x-1.5, init_pos.y-1.5);
 				curr_pos = pos2(curr_pos.x+1.5, curr_pos.y+1.5);
-				painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.5, Color32::GREEN));
+				painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.4, Color32::GREEN));
       }
       else {
         painter.rect_filled(Rect::from_min_size(pos2(0.0,0.0), window_size), 0.0, hex_color!("#00000064"));
