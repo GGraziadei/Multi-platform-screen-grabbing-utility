@@ -149,17 +149,22 @@ impl Content {
   }
   
   pub fn copy_image(&mut self, ctx: &Context) {
-    let mut image = screenshots::Image::new(0,0,vec![]);
-    ctx.memory(|mem|{
-      let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-      if image_bytes.is_some(){
-        let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-        let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-        image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-      }
-      let imgf = ImageFormatter::from(image);
-      imgf.to_clipboard();
-    });
+    if self.get_colorimage().is_some(){
+      ImageFormatter::from(self.get_colorimage().unwrap()).to_clipboard();
+    }
+    else {
+      let mut image = screenshots::Image::new(0,0,vec![]);
+      ctx.memory(|mem|{
+        let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+        if image_bytes.is_some(){
+          let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+          let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+          image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
+        }
+        let imgf = ImageFormatter::from(image);
+        imgf.to_clipboard();
+      });
+    }
   }
   
 }
@@ -170,21 +175,14 @@ impl eframe::App for Content {
       // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
       let mut region = self.region.unwrap();
       let mut colorimage = _frame.screenshot().unwrap(); //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
-
-      println!("{:?}", region);
-
       region.min.x = (region.min.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
       region.min.y = (region.min.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
       region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
       region.max.y = (region.max.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
-
-      println!("{:?}", region);
-
       colorimage = colorimage.region(&region, None);
 
       self.region = None;
       self.colorimage = Some(colorimage.clone());
-      ImageFormatter::from(colorimage.clone()).to_clipboard();
       self.set_win_type(Screenshot);
     }
   }
