@@ -33,18 +33,23 @@ impl Content {
 				mem.data.insert_temp(Id::from("first_render"), false);
 			});
 		}
-		
-		ctx.memory(|mem|{
-			let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-			if fast_bytes.is_some(){
-				r_image = RetainedImage::from_image_bytes(
-					"screenshot",
-					fast_bytes.unwrap().as_slice()
-				).unwrap();
-				screenshot_ok = true;
-			}
-		});
 
+		if self.get_colorimage().is_some(){
+			r_image = RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap());
+			screenshot_ok = true;
+		}
+		else {
+			ctx.memory(|mem|{
+				let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
+				if fast_bytes.is_some(){
+					r_image = RetainedImage::from_image_bytes(
+						"screenshot",
+						fast_bytes.unwrap().as_slice()
+					).unwrap();
+					screenshot_ok = true;
+				}
+			});
+		}
 
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
