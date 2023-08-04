@@ -23,6 +23,12 @@ pub enum AcquireMode{
     DragDrop,
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, Default)]
+pub struct AcquireAction{
+    pub save_file : bool,
+    pub copy_file : bool
+}
+
 impl Default for AcquireMode{
     fn default() -> Self {
         AcquireMode::DragDrop
@@ -141,6 +147,7 @@ pub struct Configuration{
     coordinates : (usize,usize),
     height: usize,
     width: usize,
+    when_capture : AcquireAction,
     delay: Option<Duration>,
     hot_key_map : HashMap<AcquireMode, KeyCombo>
 }
@@ -155,6 +162,7 @@ impl Default for Configuration{
             coordinates: (0, 0),
             height: 0,
             width: 0,
+            when_capture: Default::default(),
             delay: None,
             hot_key_map: Default::default(),
         }
@@ -189,6 +197,7 @@ impl Configuration{
         height: usize,
         width: usize,
         delay: Option<Duration>,
+        when_capture : AcquireAction,
         hot_key_map : HashMap<AcquireMode, KeyCombo>
     ) -> Self
     {
@@ -200,6 +209,7 @@ impl Configuration{
             coordinates,
             height,
             width,
+            when_capture,
             delay,
             hot_key_map,
         };
@@ -311,6 +321,18 @@ impl Configuration{
     pub fn set_filename_pattern(&mut self, p : String) -> Option<bool>
     {
         self.filename_pattern = p;
+        self.write()?;
+        Some(true)
+    }
+
+    pub  fn get_when_capture(&self) -> Option<AcquireAction>
+    {
+        Some(self.when_capture)
+    }
+
+    pub  fn set_when_capture(&mut self, aa : AcquireAction) -> Option<bool>
+    {
+        self.when_capture = aa;
         self.write()?;
         Some(true)
     }
