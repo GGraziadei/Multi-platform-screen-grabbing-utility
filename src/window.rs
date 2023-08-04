@@ -145,10 +145,9 @@ impl eframe::App for Content {
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
     match self.window_type{
       Main => self.main_window(ctx, _frame),
-      // Settings => self.settings_window(ctx, _frame),
+      Settings => self.settings_window(ctx, _frame),
       Screenshot => self.screenshot_window(ctx, _frame),
       Select => self.select_window(ctx, _frame),
-      _ => {}
     }
   }
 }
@@ -164,7 +163,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
   let options = eframe::NativeOptions{
     resizable: false,
     follow_system_theme: true,
-    initial_window_size: Some(Vec2::new(640.0, 360.0)),
+    initial_window_size: Some(Vec2::new(330.0, 230.0)),
     default_theme: Theme::Dark,
     // centered: true,
     ..Default::default()
@@ -175,7 +174,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    window_type: Main,
+    window_type: Settings,
     region: None,
   };
 

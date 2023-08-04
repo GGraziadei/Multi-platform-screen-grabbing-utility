@@ -181,15 +181,6 @@ impl Content {
 						if ui.button("Schermo attuale").clicked(){
 							self.current_screen(ctx, _frame);
 						};
-						if ui.button("Finestra attiva").clicked(){};
-						if ui.button("Finestra sotto al cursore").clicked(){};
-						ui.add_space(20.0);
-						ui.label(RichText::new("Opzioni di acquisizione").size(16.0));
-						ui.checkbox(&mut true, "Includi il puntatore del mouse");
-						ui.checkbox(&mut true, "Includi la barra del titolo e i bordi della finestra");
-						ui.checkbox(&mut true, "Cattura solo la finestra attuale");
-						ui.checkbox(&mut true, "Esci dopo il salvataggio o la copia manuali");
-						ui.checkbox(&mut true, "Cattura al click");
 					});
 			});
 	}
