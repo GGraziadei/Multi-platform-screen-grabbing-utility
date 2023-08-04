@@ -103,10 +103,6 @@ impl Content{
 			          Mouse::Error => { None }
 		          };
 	          }
-						println!("{:?}", di);
-						println!("{:?}", init_pos);
-						println!("{:?}", init_mouse_pos);
-
           }
           if i.pointer.hover_pos().is_some(){
             let curr_pos = i.pointer.hover_pos().unwrap();
