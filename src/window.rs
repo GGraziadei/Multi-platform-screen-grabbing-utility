@@ -2,7 +2,6 @@ use std::default::Default;
 use std::sync::{Arc, Mutex, RwLock};
 use eframe::{egui, run_native, Theme};
 use egui::*;
-use egui_modal::Modal;
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;

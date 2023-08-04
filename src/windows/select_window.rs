@@ -2,7 +2,6 @@ use eframe::epaint::{ColorImage, hex_color, Rounding, Shadow, Stroke};
 use egui::{CentralPanel, Color32, Context, Id, LayerId, Order, pos2, Pos2, Rect, Vec2};
 use egui::accesskit::Role::Caption;
 use egui_extras::RetainedImage;
-use egui_modal::{Icon, Modal};
 use env_logger::init;
 use log::{error, info};
 use screenshots::{Compression, DisplayInfo, Image};
