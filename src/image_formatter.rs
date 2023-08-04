@@ -55,7 +55,7 @@ impl From<ColorImage> for ImageFormatter {
             buffer: Vec::from(value.as_raw().clone()),
             width: value.width() as u32,
             height: value.height() as u32,
-            color_type: ColorType::Rgba32F,
+            color_type: ColorType::Rgba8,
         }
     }
 }
@@ -75,6 +75,7 @@ impl ImageFormatter{
                 info!("PNG encoding");
                 let result = image::save_buffer_with_format(p,&formatter.buffer,formatter.width,formatter.height,formatter.color_type,Png);
                 info!("PNG encoding end.");
+                notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             Jpeg => {
@@ -84,6 +85,7 @@ impl ImageFormatter{
                 let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(w_buffer, JPEG_QUALITY);
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("JPEG encoding end.");
+                notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             Gif => {
@@ -99,6 +101,7 @@ impl ImageFormatter{
                 */
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("GIF encoding end.");
+                notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             /*

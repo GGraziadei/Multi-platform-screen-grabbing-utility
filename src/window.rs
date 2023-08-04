@@ -2,7 +2,6 @@ use std::default::Default;
 use std::sync::{Arc, Mutex, RwLock};
 use eframe::{egui, run_native, Theme};
 use egui::*;
-use egui_modal::Modal;
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
@@ -26,15 +25,32 @@ pub struct Content {
   text: String,
   window_type: WindowType,
   region: Option<Rect>,
+  colorimage: Option<ColorImage>
 }
 
 impl Content {
   pub fn get_se(&self) -> &ScreenshotExecutor {
     &self.screenshot_executor
   }
+  pub fn get_enc(&self) -> &Arc<Mutex<Vec<EncoderThread>>> {
+    &self.encoders
+  }
 	pub fn set_win_type(&mut self, t: WindowType) {
 		self.window_type = t;
 	}
+  pub fn get_region(&self) -> Option<Rect> {
+    self.region
+  }
+  pub fn set_region(&mut self, region: Rect) {
+    self.region = Some(region)
+  }
+  pub fn get_colorimage(&self) -> Option<ColorImage> {
+    self.colorimage.clone()
+  }
+  pub fn set_colorimage(&mut self, image: ColorImage) {
+    self.colorimage = Some(image)
+  }
+  
   pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let di = self.get_current_screen_di(_frame).unwrap();
     match self.get_se().screenshot(di,  None) {
@@ -53,6 +69,8 @@ impl Content {
         error!("{}" , error);
       }
     }
+    
+    self.colorimage = None;
   }
   
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -101,6 +119,7 @@ impl Content {
       mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
     self.set_win_type(Screenshot);
+    self.colorimage = None;
   }
   
   pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
@@ -111,17 +130,22 @@ impl Content {
   }
   
   pub fn save_image(&mut self, ctx: &Context) {
-    let mut image = screenshots::Image::new(0,0,vec![]);
-    ctx.memory(|mem|{
-      let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-      if image_bytes.is_some(){
-        let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-        let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-        image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-      }
-      let imgf = ImageFormatter::from(image);
-      imgf.save_fmt("target/screenshot".to_string(), ImageFmt::PNG);
-    });
+    if self.get_colorimage().is_some(){
+      ImageFormatter::from(self.get_colorimage().unwrap()).save_fmt("target/screenshot".to_string(), ImageFmt::PNG);
+    }
+    else {
+      let mut image = screenshots::Image::new(0,0,vec![]);
+      ctx.memory(|mem|{
+        let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+        if image_bytes.is_some(){
+          let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+          let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+          image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
+        }
+        let imgf = ImageFormatter::from(image);
+        imgf.save_fmt("target/screenshot".to_string(), ImageFmt::PNG);
+      });
+    }
   }
   
   pub fn copy_image(&mut self, ctx: &Context) {
@@ -141,6 +165,29 @@ impl Content {
 }
 
 impl eframe::App for Content {
+  fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
+    if self.region.is_some(){
+      // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
+      let mut region = self.region.unwrap();
+      let mut colorimage = _frame.screenshot().unwrap(); //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
+
+      println!("{:?}", region);
+
+      region.min.x = (region.min.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
+      region.min.y = (region.min.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
+      region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
+      region.max.y = (region.max.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
+
+      println!("{:?}", region);
+
+      colorimage = colorimage.region(&region, None);
+
+      self.region = None;
+      self.colorimage = Some(colorimage.clone());
+      ImageFormatter::from(colorimage.clone()).to_clipboard();
+      self.set_win_type(Screenshot);
+    }
+  }
   
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
     match self.window_type{
@@ -174,8 +221,9 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    window_type: Settings,
+    window_type: Main,
     region: None,
+    colorimage: None
   };
 
   run_native(
