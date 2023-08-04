@@ -13,7 +13,6 @@ use log::{info};
 use screenshots::Image;
 use thread_priority::{set_current_thread_priority, ThreadPriority};
 use crate::configuration::ImageFmt;
-use notify_rust::Notification;
 
 #[derive(Debug)]
 pub struct EncoderThread{
@@ -80,11 +79,7 @@ impl ImageFormatter{
                 info!("PNG encoding");
                 let result = image::save_buffer_with_format(p,&formatter.buffer,formatter.width,formatter.height,formatter.color_type,Png);
                 info!("PNG encoding end.");
-                Notification::new()
-                    .summary("PNG encoding end.")
-                    .body(format!("PNG encoding end. File available: {}", path.as_str()).as_str())
-                    .icon("firefox")
-                    .show();
+                notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             Jpeg => {
@@ -94,11 +89,7 @@ impl ImageFormatter{
                 let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(w_buffer, JPEG_QUALITY);
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("JPEG encoding end.");
-                Notification::new()
-                    .summary("JPEG encoding end.")
-                    .body(format!("JPEG encoding end. File available: {}", path.as_str()).as_str())
-                    .icon("success")
-                    .show();
+                notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             Gif => {
@@ -114,11 +105,7 @@ impl ImageFormatter{
                 */
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("GIF encoding end.");
-                Notification::new()
-                    .summary("GIF encoding end.")
-                    .body(format!("GIF encoding end. File available: {}", path.as_str()).as_str())
-                    .icon("success")
-                    .show();
+                notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str());
                 result
             }
             /*
