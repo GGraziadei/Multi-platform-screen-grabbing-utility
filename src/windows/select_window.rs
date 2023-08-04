@@ -24,14 +24,6 @@ impl LineSegment {
 
 impl Content{
 	pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-		let p_frame = egui::Frame{
-      inner_margin: Default::default(),
-      outer_margin: Default::default(),
-      rounding: Default::default(),
-      shadow: Default::default(),
-      fill: Color32::GOLD,
-      stroke: Default::default(),
-    };
 
     CentralPanel::default().show(ctx, |ui| {
       let mut r_image = RetainedImage::from_color_image("", ColorImage::example());
@@ -49,50 +41,21 @@ impl Content{
 					screenshot_ok = true;
 				}
 			});
-      let mut painter = ctx.layer_painter(LayerId::new(Order::Background, Id::new("image")));
+      let mut painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("image")));
       painter.set_clip_rect(Rect::from_min_size(pos2(0.0, 0.0), window_size));
 
 			if screenshot_ok {
       	painter.image(r_image.texture_id(ctx), Rect { min: pos2(0.0, 0.0), max: pos2(_frame.info().window_info.size.x, _frame.info().window_info.size.y) }, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
 			}
 
-
 			if ctx.input(|i| i.pointer.primary_released()){
 				ctx.memory_mut(|mem|{
 					let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_pos"));
 					let curr_pos = mem.data.get_temp::<Pos2>(Id::new("curr_pos"));
 					if init_pos.is_some() && curr_pos.is_some(){
-						let di = mem.data.get_temp::<DisplayInfo>(Id::from("di")).unwrap();
-						let x = di.x + init_pos.unwrap().x as i32;
-						let y = di.y + init_pos.unwrap().y as i32;
-						let width = (curr_pos.unwrap().x - init_pos.unwrap().x);
-						let height = (curr_pos.unwrap().y - init_pos.unwrap().y);
+						let region = Rect::from_min_max(init_pos.unwrap(), curr_pos.unwrap());
+						self.set_region(region);
 						_frame.request_screenshot();
-						self.set_region(Rect::from_min_size(pos2(init_pos.unwrap().x, init_pos.unwrap().y), Vec2::new(width, height)));
-						
-						// colorimage.region(Rect::from_min_size(), None);
-						// match self.get_se().screenshot(di,ca) {
-						// 	Ok(screenshot) => {
-						// 		let img_bytes = screenshot.rgba().clone();
-						// 		let img_bytes_fast = screenshot.to_png(None).unwrap();
-						// 		mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-						// 		mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-						// 		mem.data.insert_temp(Id::from("width"), screenshot.width());
-						// 		mem.data.insert_temp(Id::from("height"), screenshot.height());
-						// 		self.set_win_type(Screenshot);
-						// 	}
-						// 	Err(error) => {
-						// 		error!("{}",error);
-						// 		/*
-						// 		Modal::new(ctx, "error_alert").open_dialog(
-						// 			Some("Error during screenshot print."),
-						// 			Some(error),
-						// 			Some(Icon::Error));
-						//
-						// 		 */
-						// 		self.set_win_type(WindowType::Main);
-						// 	}
-						// };
 					}
 				});
 			}
@@ -139,8 +102,6 @@ impl Content{
 	        painter.rect_filled(Rect::from_min_size(pos2(0.0,0.0), window_size), 0.0, hex_color!("#00000064"));
 	      }
 	    }
-
-
     });
 	}
 }

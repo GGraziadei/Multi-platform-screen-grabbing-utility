@@ -23,7 +23,6 @@ pub struct Content {
   screenshot_executor : ScreenshotExecutor,
   encoders : Arc<Mutex<Vec<EncoderThread>>>,
   text: String,
-  close: bool,
   window_type: WindowType,
   region: Option<Rect>,
   colorimage: Option<ColorImage>
@@ -163,20 +162,25 @@ impl Content {
 impl eframe::App for Content {
   fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
     if self.region.is_some(){
-      let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
+      // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
+      let mut region = self.region.unwrap();
+      let mut colorimage = _frame.screenshot().unwrap(); //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
+
+      println!("{:?}", region);
+
+      region.min.x = (region.min.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
+      region.min.y = (region.min.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
+      region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
+      region.max.y = (region.max.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
+
+      println!("{:?}", region);
+
+      colorimage = colorimage.region(&region, None);
+
       self.region = None;
       self.colorimage = Some(colorimage.clone());
       ImageFormatter::from(colorimage.clone()).to_clipboard();
       self.set_win_type(Screenshot);
-      
-      // let img_bytes = screenshot.rgba().clone();
-      // 		let img_bytes_fast = screenshot.to_png(None).unwrap();
-      // 		mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-      // 		mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-      // 		mem.data.insert_temp(Id::from("width"), screenshot.width());
-      // 		mem.data.insert_temp(Id::from("height"), screenshot.height());
-      
-      
     }
   }
   
@@ -213,7 +217,6 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    close: false,
     window_type: Main,
     region: None,
     colorimage: None
