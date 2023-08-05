@@ -1,5 +1,8 @@
 use std::default::Default;
+use std::ops::Add;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
+use directories::UserDirs;
 use eframe::{egui, run_native, Theme};
 use egui::*;
 use log::error;
@@ -129,9 +132,16 @@ impl Content {
     }
   }
   
-  pub fn save_image(&mut self, ctx: &Context) {
+  pub fn save_image(&mut self, ctx: &Context, custom_path: Option<PathBuf>) {
+    let mut save_path = PathBuf::from(UserDirs::new().unwrap().picture_dir().unwrap());
+    if custom_path.is_some(){
+      save_path = custom_path.unwrap();
+    }
+    save_path.push("screenshot");
+    let path = save_path.to_str().unwrap().to_string();
+
     if self.get_colorimage().is_some(){
-      ImageFormatter::from(self.get_colorimage().unwrap()).save_fmt("target/screenshot".to_string(), ImageFmt::PNG);
+      ImageFormatter::from(self.get_colorimage().unwrap()).save_fmt(path, ImageFmt::PNG);
     }
     else {
       let mut image = screenshots::Image::new(0,0,vec![]);
@@ -143,7 +153,7 @@ impl Content {
           image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
         }
         let imgf = ImageFormatter::from(image);
-        imgf.save_fmt("target/screenshot".to_string(), ImageFmt::PNG);
+        imgf.save_fmt(path, ImageFmt::PNG);
       });
     }
   }
@@ -208,7 +218,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
   let options = eframe::NativeOptions{
     resizable: false,
     follow_system_theme: true,
-    initial_window_size: Some(Vec2::new(330.0, 230.0)),
+    initial_window_size: Some(Vec2::new(350.0, 250.0)),
     default_theme: Theme::Dark,
     // centered: true,
     ..Default::default()

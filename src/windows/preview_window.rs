@@ -104,13 +104,17 @@ impl Content {
 								icon_size,
 								"Salva")).clicked()
 						{
-							self.save_image(ctx);
+							self.save_image(ctx, None);
 						}
 						if ui.add(
 							Button::image_and_text(
 								save_as_icon.texture_id(ctx),
 								icon_size,
-								"Salva come...")).clicked(){}
+								"Salva come...")).clicked()
+						{
+							let path = rfd::FileDialog::new().pick_folder();
+							self.save_image(ctx, path);
+						}
 						if ui.add(
 							Button::image_and_text(
 								copy_icon.texture_id(ctx),

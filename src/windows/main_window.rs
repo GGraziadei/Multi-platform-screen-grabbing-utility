@@ -29,19 +29,20 @@ impl Content {
         ui.with_layout(
           Layout::top_down_justified( Align::Center),
           |ui| {
-            ui.label(RichText::new("Modalità di acquisizione").size(16.0));
-            ui.add_space(10.0);
             ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
             ui.spacing_mut().item_spacing.y = 10.0;
 
-            if ui.button("Regione rettangolare").clicked(){
-              self.select(ctx, _frame);
+            if ui.button("Schermo attuale").clicked(){
+              self.current_screen(ctx, _frame);
             };
             if ui.button("Tutti gli schermi").clicked(){
               self.all_screens(ctx, _frame);
             };
-            if ui.button("Schermo attuale").clicked(){
-              self.current_screen(ctx, _frame);
+            if ui.button("Regione rettangolare").clicked(){
+              self.select(ctx, _frame);
+            };
+            if ui.button("Impostazioni").clicked(){
+              self.set_win_type(Settings);
             };
           }
         );
