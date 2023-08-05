@@ -139,7 +139,6 @@ impl Content {
       save_path = custom_path.unwrap();
       match save_path.extension(){
         Some(ext) => {
-          println!("{:?}", ext);
           match ext.to_str().unwrap() {
             "png" => format = ImageFmt::PNG,
             "jpg" => format = ImageFmt::JPG,
@@ -156,7 +155,6 @@ impl Content {
           return;
         }
       }
-      println!("{}", format);
     }
     else {
       save_path.push("screenshot.png");
