@@ -1,6 +1,6 @@
 use std::default::Default;
 use std::ops::Add;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use directories::UserDirs;
 use eframe::{egui, run_native, Theme};
@@ -133,11 +133,12 @@ impl Content {
   }
   
   pub fn save_image(&mut self, ctx: &Context, custom_path: Option<PathBuf>) {
-    let mut save_path = PathBuf::from(UserDirs::new().unwrap().picture_dir().unwrap());
-    let mut format = ImageFmt::PNG;
+
+    let mut path : String;
+    let mut format : ImageFmt;
+
     if custom_path.is_some(){
-      save_path = custom_path.unwrap();
-      match save_path.extension(){
+      match custom_path.clone().unwrap().extension(){
         Some(ext) => {
           match ext.to_str().unwrap() {
             "png" => format = ImageFmt::PNG,
@@ -155,11 +156,19 @@ impl Content {
           return;
         }
       }
+      path = custom_path.unwrap().to_str().unwrap().to_string();
     }
-    else {
-      save_path.push("screenshot.png");
+    else
+    {
+      let configuration_read = self.configuration.read().unwrap();
+      let file_name = configuration_read.get_filename().unwrap();
+      let save_path = configuration_read.get_save_path().unwrap();
+      format = configuration_read.get_image_fmt().unwrap();
+      drop(configuration_read);
+
+      path = Path::new(&save_path).join(format!("{}.{}",file_name,format)).to_str().unwrap().to_string();
+      println!("{}",path);
     }
-    let path = save_path.to_str().unwrap().to_string();
 
     let imgf = match self.get_colorimage(){
       Some(img) => ImageFormatter::from(img),

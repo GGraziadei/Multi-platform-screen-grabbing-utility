@@ -3,13 +3,14 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::{Read, Write};
+use std::path::Path;
 use std::time::Duration;
 use egui::epaint::ahash::HashMap;
 use egui::Key;
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use chrono::Local;
-
+use directories::UserDirs;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
@@ -156,8 +157,8 @@ impl Default for Configuration{
     fn default() -> Self {
         Self{
             app_name: "MPSGU".to_string(),
-            save_path: "".to_string(),
-            filename_pattern: "Screenshot_%Y-%m-%d_%H:%M:%S".to_string(),
+            save_path: UserDirs::new().unwrap().picture_dir().unwrap().to_str().unwrap().to_string(),
+            filename_pattern: "Screenshot_%Y-%m-%d_%H%M%S".to_string(),
             image_format: ImageFmt::PNG,
             coordinates: (0, 0),
             height: 0,
