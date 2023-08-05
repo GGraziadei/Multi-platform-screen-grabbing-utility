@@ -134,28 +134,52 @@ impl Content {
   
   pub fn save_image(&mut self, ctx: &Context, custom_path: Option<PathBuf>) {
     let mut save_path = PathBuf::from(UserDirs::new().unwrap().picture_dir().unwrap());
+    let mut format = ImageFmt::PNG;
     if custom_path.is_some(){
       save_path = custom_path.unwrap();
-    }
-    save_path.push("screenshot");
-    let path = save_path.to_str().unwrap().to_string();
-
-    if self.get_colorimage().is_some(){
-      ImageFormatter::from(self.get_colorimage().unwrap()).save_fmt(path, ImageFmt::PNG);
+      match save_path.extension(){
+        Some(ext) => {
+          println!("{:?}", ext);
+          match ext.to_str().unwrap() {
+            "png" => format = ImageFmt::PNG,
+            "jpg" => format = ImageFmt::JPG,
+            "jpeg" => format = ImageFmt::JPG,
+            "gif" => format = ImageFmt::GIF,
+            _ => {
+              error!("Format not supported.");
+              return;
+            }
+          }
+        }
+        None => {
+          error!("Format not supported.");
+          return;
+        }
+      }
+      println!("{}", format);
     }
     else {
-      let mut image = screenshots::Image::new(0,0,vec![]);
-      ctx.memory(|mem|{
-        let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-        if image_bytes.is_some(){
-          let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-          let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-          image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-        }
-        let imgf = ImageFormatter::from(image);
-        imgf.save_fmt(path, ImageFmt::PNG);
-      });
+      save_path.push("screenshot.png");
     }
+    let path = save_path.to_str().unwrap().to_string();
+
+    let imgf = match self.get_colorimage(){
+      Some(img) => ImageFormatter::from(img),
+      None => {
+        let mut image = screenshots::Image::new(0,0,vec![]);
+        let imgf = ctx.memory(|mem|{
+          let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
+          if image_bytes.is_some(){
+            let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+            let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+            image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
+          }
+          ImageFormatter::from(image)
+        });
+        imgf
+      }
+    };
+    imgf.save_fmt(path, format);
   }
   
   pub fn copy_image(&mut self, ctx: &Context) {

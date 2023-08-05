@@ -1,9 +1,6 @@
-use eframe::epaint::textures::TextureOptions;
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
 use egui_extras::RetainedImage;
-use crate::configuration::ImageFmt;
-use crate::image_formatter::ImageFormatter;
 use crate::window::Content;
 
 impl Content {
@@ -112,8 +109,14 @@ impl Content {
 								icon_size,
 								"Salva come...")).clicked()
 						{
-							let path = rfd::FileDialog::new().pick_folder();
-							self.save_image(ctx, path);
+							let path = native_dialog::FileDialog::new()
+								.add_filter("png", &["png"])
+								.add_filter("jpg", &["jpg"])
+								.add_filter("gif", &["gif"])
+								.show_save_single_file().unwrap();
+							if path.is_some(){
+								self.save_image(ctx, path);
+							}
 						}
 						if ui.add(
 							Button::image_and_text(
