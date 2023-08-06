@@ -2,6 +2,7 @@ use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
 use egui_extras::RetainedImage;
 use crate::window::Content;
+use crate::window::WindowType::Settings;
 
 impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -193,6 +194,9 @@ impl Content {
 						if ui.button("Schermo attuale").clicked(){
 							self.current_screen(ctx, _frame);
 						};
+						if ui.button("Impostazioni").clicked(){
+              self.set_win_type(Settings);
+            };
 					});
 			});
 	}

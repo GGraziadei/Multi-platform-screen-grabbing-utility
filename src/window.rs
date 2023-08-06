@@ -1,8 +1,6 @@
 use std::default::Default;
-use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
-use directories::UserDirs;
 use eframe::{egui, run_native, Theme};
 use egui::*;
 use log::error;
@@ -249,7 +247,6 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
   let options = eframe::NativeOptions{
     resizable: false,
     follow_system_theme: true,
-    initial_window_size: Some(Vec2::new(350.0, 250.0)),
     default_theme: Theme::Dark,
     // centered: true,
     ..Default::default()

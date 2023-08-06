@@ -8,6 +8,7 @@ impl Content {
     let bg_color = ctx.style().visuals.panel_fill;
 
     _frame.set_decorations(true);
+    _frame.set_window_size(Vec2::new(350.0, 245.0));
 
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::symmetric(0.0, 20.0), ..Default::default()})
