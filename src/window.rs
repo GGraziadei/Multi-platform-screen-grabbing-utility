@@ -20,7 +20,7 @@ pub enum WindowType {
 }
 
 pub struct Content {
-  configuration : Arc<RwLock<Configuration>>,
+  pub(crate) configuration : Arc<RwLock<Configuration>>,
   screenshot_executor : ScreenshotExecutor,
   encoders : Arc<Mutex<Vec<EncoderThread>>>,
   text: String,
@@ -257,7 +257,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    window_type: Main,
+    window_type: Settings,
     region: None,
     colorimage: None
   };

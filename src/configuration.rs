@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Duration;
 use egui::epaint::ahash::HashMap;
-use egui::Key;
+use egui::{Key, Rect};
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use chrono::Local;
@@ -145,9 +145,7 @@ pub struct Configuration{
     save_path : String,
     filename_pattern : String,
     image_format : ImageFmt,
-    coordinates : (usize,usize),
-    height: usize,
-    width: usize,
+    region: Option<Rect>,
     when_capture : AcquireAction,
     delay: Option<Duration>,
     hot_key_map : HashMap<AcquireMode, KeyCombo>
@@ -160,9 +158,7 @@ impl Default for Configuration{
             save_path: UserDirs::new().unwrap().picture_dir().unwrap().to_str().unwrap().to_string(),
             filename_pattern: "Screenshot_%Y-%m-%d_%H%M%S".to_string(),
             image_format: ImageFmt::PNG,
-            coordinates: (0, 0),
-            height: 0,
-            width: 0,
+            region: None,
             when_capture: Default::default(),
             delay: None,
             hot_key_map: Default::default(),
@@ -194,9 +190,7 @@ impl Configuration{
         save_path : String,
         filename_pattern : String,
         image_format : ImageFmt,
-        coordinates : (usize, usize),
-        height: usize,
-        width: usize,
+        region: Option<Rect>,
         delay: Option<Duration>,
         when_capture : AcquireAction,
         hot_key_map : HashMap<AcquireMode, KeyCombo>
@@ -207,9 +201,7 @@ impl Configuration{
             save_path,
             filename_pattern,
             image_format,
-            coordinates,
-            height,
-            width,
+            region,
             when_capture,
             delay,
             hot_key_map,
@@ -254,38 +246,14 @@ impl Configuration{
         Some(true)
     }
 
-    pub fn get_coordinates(&self) -> Option<(usize, usize)>
+    pub fn get_region(&self) -> Option<Rect>
     {
-        Some(self.coordinates.clone())
+        self.region.clone()
     }
 
-    pub fn set_coordinates(&mut self, coordinates : (usize, usize)) -> Option<bool>
+    pub fn set_coordinates(&mut self, region : Rect) -> Option<bool>
     {
-        self.coordinates = coordinates;
-        self.write()?;
-        Some(true)
-    }
-
-    pub fn get_height(&self) -> Option<usize>
-    {
-        Some(self.height)
-    }
-
-    pub fn set_height(&mut self, height : usize ) -> Option<bool>
-    {
-        self.height = height;
-        self.write()?;
-        Some(true)
-    }
-
-    pub fn get_width(&self)  -> Option<usize>
-    {
-        Some(self.width)
-    }
-
-    pub fn set_width(&mut self, width : usize ) -> Option<bool>
-    {
-        self.width = width;
+        self.region = Some(region);
         self.write()?;
         Some(true)
     }
@@ -317,6 +285,11 @@ impl Configuration{
     pub fn get_filename(&self) -> Option<String>
     {
         Some(chrono::Local::now().format(&self.filename_pattern.clone()).to_string())
+    }
+
+    pub fn get_filename_pattern(&self) -> Option<String>
+    {
+        Some(self.filename_pattern.clone())
     }
 
     pub fn set_filename_pattern(&mut self, p : String) -> Option<bool>
