@@ -37,16 +37,24 @@ impl Content {
 			screenshot_ok = true;
 		}
 		else {
-			ctx.memory(|mem|{
-				let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-				if fast_bytes.is_some(){
-					r_image = RetainedImage::from_image_bytes(
-						"screenshot",
-						fast_bytes.unwrap().as_slice()
-					).unwrap();
-					screenshot_ok = true;
-				}
-			});
+
+			let fast_bytes = self.get_gui_screenshot_data().unwrap().img_bytes_fast;
+			r_image = RetainedImage::from_image_bytes(
+				"screenshot",
+				fast_bytes.as_slice()
+			).unwrap();
+			screenshot_ok = true;
+
+			// ctx.memory(|mem|{
+			// 	let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
+			// 	if fast_bytes.is_some(){
+			// 		r_image = RetainedImage::from_image_bytes(
+			// 			"screenshot",
+			// 			fast_bytes.unwrap().as_slice()
+			// 		).unwrap();
+			// 		screenshot_ok = true;
+			// 	}
+			// });
 		}
 
     TopBottomPanel::top("top")
@@ -186,13 +194,13 @@ impl Content {
 						ui.label(RichText::new("Acquisisci una nuova schermata").size(16.0));
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 						if ui.button("Regione rettangolare").clicked(){
-							self.select(ctx, _frame);
+							// self.select(ctx, _frame);
 						};
 						if ui.button("Tutti gli schermi").clicked(){
-							self.all_screens(ctx, _frame);
+							// self.all_screens(ctx, _frame);
 						};
 						if ui.button("Schermo attuale").clicked(){
-							self.current_screen(ctx, _frame);
+							// self.current_screen(ctx, _frame);
 						};
 						if ui.button("Impostazioni").clicked(){
               self.set_win_type(Settings);

@@ -14,10 +14,10 @@ use directories::UserDirs;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
-    /*Active window*/
-    Window,
+    /*Active screen*/
+    CurrentScreen,
     /*Select screen*/
-    Screen,
+    SelectScreen,
     /*Merge all screen*/
     AllScreen,
     /*Active screen (in front-end flag for edit image)*/
@@ -39,8 +39,8 @@ impl Default for AcquireMode{
 impl Display for AcquireMode{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            AcquireMode::Window => { "Window" }
-            AcquireMode::Screen => { "Active screen" }
+            AcquireMode::CurrentScreen => { "Window" }
+            AcquireMode::SelectScreen => { "Active screen" }
             AcquireMode::AllScreen => { "All screens" }
             AcquireMode::DragDrop => { "Drag and drop" }
         })

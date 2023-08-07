@@ -1,12 +1,14 @@
 use std::default::Default;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
+use std::thread;
+use std::time::Duration;
 use eframe::{egui, run_native, Theme};
 use egui::*;
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
-use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::{AcquireMode, Configuration, ImageFmt};
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{ScreenshotExecutor};
 use WindowType::*;
@@ -15,8 +17,17 @@ use crate::image_combiner::ImageCombiner;
 pub enum WindowType {
   Main,
   Settings,
-  Screenshot,
-  Select
+  Preview,
+  SelectScreen,
+  DragAndDrop
+}
+
+#[derive(Clone)]
+pub struct GuiScreenshotData {
+  pub(crate)img_bytes: Vec<u8>,
+  pub(crate)img_bytes_fast: Vec<u8>,
+  pub(crate)width: u32,
+  pub(crate)height: u32
 }
 
 pub struct Content {
@@ -26,7 +37,9 @@ pub struct Content {
   text: String,
   window_type: WindowType,
   region: Option<Rect>,
-  colorimage: Option<ColorImage>
+  colorimage: Option<ColorImage>,
+  acquire: Option<AcquireMode>,
+  gui_screenshot_data: Option<GuiScreenshotData>,
 }
 
 impl Content {
@@ -51,8 +64,47 @@ impl Content {
   pub fn set_colorimage(&mut self, image: ColorImage) {
     self.colorimage = Some(image)
   }
+  pub fn get_acquire(&self) -> Option<AcquireMode> {
+    self.acquire
+}
+  pub fn set_acquire(&mut self, acquire: Option<AcquireMode>) {
+    self.acquire = acquire
+  }
+  pub fn get_gui_screenshot_data(&self) -> Option<GuiScreenshotData> {
+    self.gui_screenshot_data.clone()
+  }
+  pub fn set_gui_screenshot_data(&mut self, data: Option<GuiScreenshotData>) {
+    self.gui_screenshot_data = data
+  }
   
-  pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+  pub fn current_screen(&mut self, _frame: &eframe::Frame){
+    let di = self.get_current_screen_di(_frame).unwrap();
+    match self.get_se().screenshot(di,  None) {
+      Ok(screenshot) => {
+        let img_bytes = screenshot.rgba().clone();
+        let img_bytes_fast = screenshot.to_png(None).unwrap();
+        // ctx.memory_mut(|mem|{
+        //   mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+        //   mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+        //   mem.data.insert_temp(Id::from("width"), screenshot.width());
+        //   mem.data.insert_temp(Id::from("height"), screenshot.height());
+        // });
+        self.set_gui_screenshot_data(Some(GuiScreenshotData{
+          img_bytes,
+          img_bytes_fast,
+          width: screenshot.width(),
+          height: screenshot.height()
+        }));
+        self.set_win_type(Preview);
+      }
+      Err(error) => {
+        error!("{}" , error);
+      }
+    }
+    
+    self.colorimage = None;
+  }
+  pub fn select_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let di = self.get_current_screen_di(_frame).unwrap();
     match self.get_se().screenshot(di,  None) {
       Ok(screenshot) => {
@@ -64,16 +116,16 @@ impl Content {
           mem.data.insert_temp(Id::from("width"), screenshot.width());
           mem.data.insert_temp(Id::from("height"), screenshot.height());
         });
-        self.set_win_type(Screenshot);
+        self.set_win_type(SelectScreen);
       }
       Err(error) => {
         error!("{}" , error);
       }
     }
-    
+
     self.colorimage = None;
   }
-  
+
   pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let di = self.get_current_screen_di(_frame);
     if di.is_some(){
@@ -86,9 +138,8 @@ impl Content {
             mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
             mem.data.insert_temp(Id::from("width"), screenshot.width());
             mem.data.insert_temp(Id::from("height"), screenshot.height());
-            mem.data.insert_temp(Id::from("di"), di.unwrap());
           });
-          self.set_win_type(Select);
+          self.set_win_type(DragAndDrop);
         }
         Err(error) => {
           error!("{}",error);
@@ -119,11 +170,11 @@ impl Content {
       mem.data.insert_temp(Id::from("width"), screenshot.width());
       mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
-    self.set_win_type(Screenshot);
+    self.set_win_type(Preview);
     self.colorimage = None;
   }
   
-  pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
+  pub fn get_current_screen_di(&mut self, _frame: &eframe::Frame) -> Option<DisplayInfo> {
     match Mouse::get_mouse_position() {
       Mouse::Position { x, y } => DisplayInfo::from_point(x, y).ok(),
       Mouse::Error => panic!("Error in mouse position"),
@@ -209,6 +260,7 @@ impl Content {
 }
 
 impl eframe::App for Content {
+
   fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
     if self.region.is_some(){
       // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
@@ -222,16 +274,57 @@ impl eframe::App for Content {
 
       self.region = None;
       self.colorimage = Some(colorimage.clone());
-      self.set_win_type(Screenshot);
+      self.set_win_type(Preview);
+    }
+    else {
+      match self.get_acquire(){
+        Some(a) => {
+          match a {
+            AcquireMode::CurrentScreen => {self.current_screen(_frame)}
+            AcquireMode::SelectScreen => {}
+            AcquireMode::AllScreen => {}
+            AcquireMode::DragDrop => {}
+          }
+        }
+        None => {}
+      }
     }
   }
   
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+     match self.get_acquire(){
+      None => {}
+      Some(acquire) => {
+        match acquire {
+          AcquireMode::CurrentScreen => {
+            // self.current_screen(ctx, _frame);
+            self.set_acquire(None);
+            _frame.set_visible(true);
+          }
+          AcquireMode::SelectScreen => {
+            // self.select_screen(ctx, _frame);
+            self.set_acquire(None);
+            _frame.set_visible(true);
+          }
+          AcquireMode::AllScreen => {
+            // self.all_screens(ctx, _frame);
+            self.set_acquire(None);
+            _frame.set_visible(true);
+          }
+          AcquireMode::DragDrop => {
+            // self.select(ctx, _frame);
+            self.set_acquire(None);
+            _frame.set_visible(true);
+          }
+        }
+      }
+    }
     match self.window_type{
       Main => self.main_window(ctx, _frame),
       Settings => self.settings_window(ctx, _frame),
-      Screenshot => self.screenshot_window(ctx, _frame),
-      Select => self.select_window(ctx, _frame),
+      Preview => self.screenshot_window(ctx, _frame),
+      SelectScreen => self.select_screen_window(ctx, _frame),
+      DragAndDrop => self.select_window(ctx, _frame),
     }
   }
 }
@@ -257,9 +350,11 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    window_type: Settings,
+    window_type: Main,
     region: None,
-    colorimage: None
+    colorimage: None,
+    acquire: None,
+    gui_screenshot_data: None
   };
 
   run_native(
