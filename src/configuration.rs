@@ -1,11 +1,12 @@
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::fs;
 use std::fs::File;
 use std::hash::Hash;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Duration;
-use egui::epaint::ahash::HashMap;
 use egui::{Key, Rect};
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
@@ -188,30 +189,60 @@ impl Configuration{
     }
 
     pub fn bulk(
-        app_name : String,
-        save_path : String,
-        filename_pattern : String,
-        image_format : ImageFmt,
-        save_region: bool,
-        region: Option<Rect>,
-        delay: Option<Duration>,
-        when_capture : AcquireAction,
-        hot_key_map : HashMap<AcquireMode, KeyCombo>
-    ) -> Self
+        &mut self,
+        app_name : Option<String>,
+        save_path : Option<String>,
+        filename_pattern : Option<String>,
+        image_format : Option<ImageFmt>,
+        save_region: Option<bool>,
+        region: Option<Option<Rect>>,
+        delay: Option<Option<Duration>>,
+        when_capture : Option<AcquireAction>,
+        hot_key_map : Option<HashMap<AcquireMode, KeyCombo>>
+    ) -> Option<bool>
     {
-        let c = Self{
-            app_name,
-            save_path,
-            filename_pattern,
-            image_format,
-            save_region,
-            region,
-            when_capture,
-            delay,
-            hot_key_map,
-        };
-        c.write().expect("Error during config file generation.");
-        c
+
+        if save_path.is_some() {
+            //Check save path
+            let save_path = save_path?;
+            fs::read_dir(&save_path).ok()?;
+            self.save_path = save_path;
+        }
+
+        if app_name.is_some(){
+            self.app_name = app_name?;
+        }
+
+        if filename_pattern.is_some() {
+            self.filename_pattern = filename_pattern?;
+        }
+
+        if image_format.is_some() {
+            self.image_format = image_format?;
+        }
+
+        if save_region.is_some() {
+            self.save_region = save_region?;
+        }
+
+        if region.is_some(){
+            self.region = region?;
+        }
+
+        if delay.is_some() {
+            self.delay = delay?;
+        }
+
+        if when_capture.is_some() {
+            self.when_capture = when_capture?;
+        }
+
+        if hot_key_map.is_some() {
+            self.hot_key_map = hot_key_map?;
+        }
+
+        self.write().expect("Error during config file generation.");
+        Some(true)
     }
 
     pub fn get_app_name(&self) -> Option<String>
