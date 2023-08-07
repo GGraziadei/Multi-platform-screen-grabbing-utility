@@ -24,11 +24,6 @@ impl Content {
 			Some(s) => s,
 			None => self.configuration.read().unwrap().get_save_path().unwrap()
 		};
-		let mut jpeg_quality = match ctx.memory(|mem| mem.data.get_temp::<u8>(Id::from("quality"))) {
-			Some(q) => q,
-			// None => self.configuration.read().unwrap().get_jpeg_quality().unwrap()
-			None => 100
-		};
 		let mut filename_pattern = match ctx.memory(|mem| mem.data.get_temp::<String>(Id::from("pattern"))) {
 			Some(s) => s,
 			None => self.configuration.read().unwrap().get_filename_pattern().unwrap()
