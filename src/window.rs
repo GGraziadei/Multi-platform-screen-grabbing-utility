@@ -15,8 +15,9 @@ use crate::image_combiner::ImageCombiner;
 pub enum WindowType {
   Main,
   Settings,
-  Screenshot,
-  Select
+  Preview,
+  Portion,
+  SelectScreen
 }
 
 pub struct Content {
@@ -64,7 +65,7 @@ impl Content {
           mem.data.insert_temp(Id::from("width"), screenshot.width());
           mem.data.insert_temp(Id::from("height"), screenshot.height());
         });
-        self.set_win_type(Screenshot);
+        self.set_win_type(Preview);
       }
       Err(error) => {
         error!("{}" , error);
@@ -73,8 +74,35 @@ impl Content {
     
     self.colorimage = None;
   }
-  
-  pub fn select(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+
+  pub fn select_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+    let di = self.get_current_screen_di(_frame).unwrap();
+    match self.get_se().screenshot_all() {
+      Some(v) => {
+        let mut img_bytes_vec = vec![];
+        let mut fast_bytes_vec = vec![];
+
+        for i in v {
+          let image = i.unwrap();
+          let img_bytes = image.rgba().clone();
+          let img_bytes_fast = image.to_png(None).unwrap();
+          img_bytes_vec.push(img_bytes);
+          fast_bytes_vec.push(img_bytes_fast);
+        }
+        ctx.memory_mut(|mem|{
+          mem.data.insert_temp(Id::from("bytes"), img_bytes_vec);
+          mem.data.insert_temp(Id::from("r_bytes"), fast_bytes_vec.clone());
+        });
+        self.set_win_type(SelectScreen);
+
+      }
+      None => {}
+    }
+
+    self.colorimage = None;
+  }
+
+  pub fn portion(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let di = self.get_current_screen_di(_frame);
     if di.is_some(){
       match self.get_se().screenshot(di.unwrap(),None) {
@@ -88,7 +116,7 @@ impl Content {
             mem.data.insert_temp(Id::from("height"), screenshot.height());
             mem.data.insert_temp(Id::from("di"), di.unwrap());
           });
-          self.set_win_type(Select);
+          self.set_win_type(Portion);
         }
         Err(error) => {
           error!("{}",error);
@@ -119,7 +147,7 @@ impl Content {
       mem.data.insert_temp(Id::from("width"), screenshot.width());
       mem.data.insert_temp(Id::from("height"), screenshot.height());
     });
-    self.set_win_type(Screenshot);
+    self.set_win_type(Preview);
     self.colorimage = None;
   }
   
@@ -222,7 +250,7 @@ impl eframe::App for Content {
 
       self.region = None;
       self.colorimage = Some(colorimage.clone());
-      self.set_win_type(Screenshot);
+      self.set_win_type(Preview);
     }
   }
   
@@ -230,8 +258,9 @@ impl eframe::App for Content {
     match self.window_type{
       Main => self.main_window(ctx, _frame),
       Settings => self.settings_window(ctx, _frame),
-      Screenshot => self.screenshot_window(ctx, _frame),
-      Select => self.select_window(ctx, _frame),
+      Preview => self.screenshot_window(ctx, _frame),
+      Portion => self.select_window(ctx, _frame),
+      SelectScreen => self.select_screen_window(ctx, _frame),
     }
   }
 }
@@ -257,7 +286,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     screenshot_executor: s,
     encoders,
     text: "".to_string(),
-    window_type: Settings,
+    window_type: Main,
     region: None,
     colorimage: None
   };

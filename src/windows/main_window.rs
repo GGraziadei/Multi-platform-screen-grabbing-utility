@@ -1,5 +1,6 @@
 use eframe::emath::{Align, Vec2};
-use egui::{Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
+use egui::{CentralPanel, Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
+use egui::Align::Center;
 use crate::window::{Content};
 use crate::window::WindowType::*;
 
@@ -8,7 +9,7 @@ impl Content {
     let bg_color = ctx.style().visuals.panel_fill;
 
     _frame.set_decorations(true);
-    _frame.set_window_size(Vec2::new(350.0, 245.0));
+    _frame.set_window_size(Vec2::new(350.0, 300.0));
 
     TopBottomPanel::top("top")
       .frame(Frame{fill: bg_color, inner_margin: Margin::symmetric(0.0, 20.0), ..Default::default()})
@@ -22,10 +23,8 @@ impl Content {
           }
         );
       });
-    TopBottomPanel::top("bottom")
+    CentralPanel::default()
       .frame(Frame{fill: bg_color, inner_margin: Margin {bottom: 20.0, left: 80.0, right: 80.0, ..Default::default()}, ..Default::default()})
-      .show_separator_line(false)
-      .resizable(false)
       .show(ctx, |ui| {
         ui.with_layout(
           Layout::top_down_justified( Align::Center),
@@ -36,11 +35,14 @@ impl Content {
             if ui.button("Schermo attuale").clicked(){
               self.current_screen(ctx, _frame);
             };
+            if ui.button("Selziona schermo").clicked(){
+              self.select_screen(ctx, _frame);
+            };
             if ui.button("Tutti gli schermi").clicked(){
               self.all_screens(ctx, _frame);
             };
             if ui.button("Regione rettangolare").clicked(){
-              self.select(ctx, _frame);
+              self.portion(ctx, _frame);
             };
             if ui.button("Impostazioni").clicked(){
               self.set_win_type(Settings);

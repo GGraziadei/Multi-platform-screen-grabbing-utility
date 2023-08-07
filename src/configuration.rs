@@ -14,14 +14,14 @@ use directories::UserDirs;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
-    /*Active window*/
-    Window,
+    /*Current screen*/
+    CurrentScreen,
     /*Select screen*/
-    Screen,
+    SelectScreen,
     /*Merge all screen*/
-    AllScreen,
-    /*Active screen (in front-end flag for edit image)*/
-    DragDrop,
+    AllScreens,
+    /*Portion of the current screen*/
+    Portion,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, Default)]
@@ -32,17 +32,17 @@ pub struct AcquireAction{
 
 impl Default for AcquireMode{
     fn default() -> Self {
-        AcquireMode::DragDrop
+        AcquireMode::Portion
     }
 }
 
 impl Display for AcquireMode{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            AcquireMode::Window => { "Window" }
-            AcquireMode::Screen => { "Active screen" }
-            AcquireMode::AllScreen => { "All screens" }
-            AcquireMode::DragDrop => { "Drag and drop" }
+            AcquireMode::CurrentScreen => { "Window" }
+            AcquireMode::SelectScreen => { "Active screen" }
+            AcquireMode::AllScreens => { "All screens" }
+            AcquireMode::Portion => { "Drag and drop" }
         })
     }
 }

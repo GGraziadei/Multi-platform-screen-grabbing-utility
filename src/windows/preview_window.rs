@@ -186,7 +186,7 @@ impl Content {
 						ui.label(RichText::new("Acquisisci una nuova schermata").size(16.0));
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 						if ui.button("Regione rettangolare").clicked(){
-							self.select(ctx, _frame);
+							self.portion(ctx, _frame);
 						};
 						if ui.button("Tutti gli schermi").clicked(){
 							self.all_screens(ctx, _frame);
