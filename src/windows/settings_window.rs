@@ -1,10 +1,8 @@
-use std::sync::mpsc::channel;
 use eframe::Theme;
 use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Area, Align2, Color32, Order, LayerId, Id, pos2, TextStyle, RichText, Stroke, Direction, TextEdit, ImageButton, Rect, text_edit, Slider, ComboBox, Sense, CursorIcon};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
-use serde::de::Unexpected::Enum;
-use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::ImageFmt;
 use crate::configuration::ImageFmt::{GIF, JPG, PNG};
 use crate::window::Content;
 use crate::window::WindowType::Main;
@@ -39,7 +37,7 @@ impl Content {
 			None => self.configuration.read().unwrap().get_image_fmt().unwrap(),
 		};
 
-		_frame.set_window_size(Vec2::new(800.0, 600.0));
+		_frame.set_window_size(Vec2::new(800.0, 500.0));
 		_frame.set_centered();
 		r = r - 10;
 		g = g - 10;
@@ -297,75 +295,37 @@ impl Content {
 											mem.data.insert_temp(Id::from("pattern"), filename_pattern.clone());
 										})
 									}
-
-									ComboBox::from_label("")
-										.selected_text(format!("{}", format.to_string()))
-										.width(50.0)
-										.show_ui(ui, |ui| {
-												ui.selectable_value(&mut format, PNG, "PNG");
-												ui.selectable_value(&mut format, JPG, "JPG");
-												ui.selectable_value(&mut format, GIF, "GIF");
-										});
+									ui.with_layout(Layout::top_down(Align::LEFT), |ui|{
+										ui.add_space(6.0);
+										ComboBox::from_label("")
+											.selected_text(format.to_string())
+											.width(50.0)
+											.show_ui(ui, |ui| {
+													ui.selectable_value(&mut format, PNG, "PNG");
+													ui.selectable_value(&mut format, JPG, "JPG");
+													ui.selectable_value(&mut format, GIF, "GIF");
+											});
+									});
 
 									ctx.memory_mut(|mem|{
 										mem.data.insert_temp(Id::from("format"), format);
 									});
 								});
+
 								ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%Y:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%Y");
+									let time_buttons = vec!["%Y", "%m", "%d", "%H", "%M", "%S"];
+									let time_strings = vec!["Anno", "Mese", "Giorno", "Ora", "Minuto", "Secondo"];
+										for (i, time_button) in time_buttons.iter().enumerate() {
+											ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui| {
+												if ui.label(RichText::new(time_button.to_string()).color(hex_color!("#005500")))
+													.interact(Sense::click())
+													.on_hover_cursor(CursorIcon::PointingHand)
+													.clicked() {
+													filename_pattern.push_str(time_button);
+												}
+												ui.label(time_strings[i]);
+											});
 										}
-										ui.label("Anno");
-									});
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%m:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%m");
-										}
-										ui.label("Mese");
-									});
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%d:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%d");
-										}
-										ui.label("Giorno");
-									});
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%H:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%H");
-										}
-										ui.label("Ora");
-									});
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%M:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%M");
-										}
-										ui.label("Minuto");
-									});
-									ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-										if ui.label(RichText::new("%S:").color(Color32::BLUE))
-											.interact(Sense::click())
-											.on_hover_cursor(CursorIcon::PointingHand)
-											.clicked(){
-											filename_pattern.push_str("%S");
-										}
-										ui.label("Secondo");
-									});
 									ctx.memory_mut(|mem|{
 										mem.data.insert_temp(Id::from("pattern"), filename_pattern.clone());
 									})
