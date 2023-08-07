@@ -48,7 +48,6 @@ impl Content {
 
 
 		_frame.set_window_size(Vec2::new(800.0, 400.0));
-		_frame.set_centered();
 		r = r - 10;
 		g = g - 10;
 		b = b - 10;
