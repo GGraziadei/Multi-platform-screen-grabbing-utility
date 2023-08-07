@@ -145,6 +145,7 @@ pub struct Configuration{
     save_path : String,
     filename_pattern : String,
     image_format : ImageFmt,
+    save_region: bool,
     region: Option<Rect>,
     when_capture : AcquireAction,
     delay: Option<Duration>,
@@ -158,6 +159,7 @@ impl Default for Configuration{
             save_path: UserDirs::new().unwrap().picture_dir().unwrap().to_str().unwrap().to_string(),
             filename_pattern: "Screenshot_%Y-%m-%d_%H%M%S".to_string(),
             image_format: ImageFmt::PNG,
+            save_region: false,
             region: None,
             when_capture: Default::default(),
             delay: None,
@@ -190,6 +192,7 @@ impl Configuration{
         save_path : String,
         filename_pattern : String,
         image_format : ImageFmt,
+        save_region: bool,
         region: Option<Rect>,
         delay: Option<Duration>,
         when_capture : AcquireAction,
@@ -201,6 +204,7 @@ impl Configuration{
             save_path,
             filename_pattern,
             image_format,
+            save_region,
             region,
             when_capture,
             delay,
@@ -246,12 +250,22 @@ impl Configuration{
         Some(true)
     }
 
+    pub fn get_save_region(&self) -> Option<bool> {
+        Some(self.save_region)
+    }
+
+    pub fn set_save_region(&mut self, save_region: bool) -> Option<bool> {
+        self.save_region = save_region;
+        self.write()?;
+        Some(true)
+    }
+
     pub fn get_region(&self) -> Option<Rect>
     {
         self.region.clone()
     }
 
-    pub fn set_coordinates(&mut self, region : Rect) -> Option<bool>
+    pub fn set_region(&mut self, region : Rect) -> Option<bool>
     {
         self.region = Some(region);
         self.write()?;

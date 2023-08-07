@@ -1,8 +1,9 @@
 use eframe::Theme;
 use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Area, Align2, Color32, Order, LayerId, Id, pos2, TextStyle, RichText, Stroke, Direction, TextEdit, ImageButton, Rect, text_edit, Slider, ComboBox, Sense, CursorIcon};
 use egui_extras::RetainedImage;
+use log::info;
 use native_dialog::FileDialog;
-use crate::configuration::ImageFmt;
+use crate::configuration::{AcquireAction, ImageFmt};
 use crate::configuration::ImageFmt::{GIF, JPG, PNG};
 use crate::window::Content;
 use crate::window::WindowType::Main;
@@ -36,8 +37,17 @@ impl Content {
 			Some(format) => format,
 			None => self.configuration.read().unwrap().get_image_fmt().unwrap(),
 		};
+		let mut when_acquire = match ctx.memory(|mem| mem.data.get_temp::<AcquireAction>(Id::from("when_acquire"))) {
+			Some(wa) => wa,
+			None => self.configuration.read().unwrap().get_when_capture().unwrap()
+		};
+		let mut save_region = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("save_region"))) {
+			Some(sr) => sr,
+			None => self.configuration.read().unwrap().get_save_region().unwrap()
+		};
 
-		_frame.set_window_size(Vec2::new(800.0, 500.0));
+
+		_frame.set_window_size(Vec2::new(800.0, 400.0));
 		_frame.set_centered();
 		r = r - 10;
 		g = g - 10;
@@ -47,8 +57,8 @@ impl Content {
 
 		let mut tab = ctx.memory_mut(|mem|{
 			if mem.data.get_temp::<Tab>(Id::from("tab")).is_none(){
-				mem.data.insert_temp(Id::from("tab"), Tab::Save);
-				Tab::Save
+				mem.data.insert_temp(Id::from("tab"), Tab::General);
+				Tab::General
 			}
 			else {
 				mem.data.get_temp::<Tab>(Id::from("tab")).unwrap()
@@ -64,6 +74,8 @@ impl Content {
 				.show(ctx, |ui| {
 					ui.with_layout(Layout::top_down_justified(Align::Center), |ui|{
 						ui.spacing_mut().item_spacing.y = 10.0;
+
+						//TABS ICONS
 						let mut settings_icon = RetainedImage::from_svg_bytes(
 							"settings",
 							include_bytes!("../images/settings_black.svg")).unwrap();
@@ -86,7 +98,7 @@ impl Content {
 								include_bytes!("../images/keyboard_white.svg")).unwrap();
 						}
 
-
+						//LEFT COLUMN TABS
 				  	let rect1 = ui.with_layout(Layout::top_down(Align::Center), |ui|{
 							ui.with_layer_id(LayerId::new(Order::Foreground, Id::from("1")), |ui|{
 								ui.add_space(10.0);
@@ -207,6 +219,44 @@ impl Content {
 							ui.heading(RichText::new("Generale").size(24.0));
 						});
 						ui.add_space(20.0);
+						ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+							let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
+							let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
+							ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
+								ui.add_space(2.0);
+								ui.label("Dopo aver acquisito una schermata");
+							});
+							ui.add_space(20.0);
+							ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
+								ui.spacing_mut().item_spacing.x = 10.0;
+								if ui.checkbox(&mut when_acquire.save_file, "Salva automaticamente il file nel percorso predefinito").changed(){
+									ctx.memory_mut(|mem|{
+										mem.data.insert_temp(Id::from("when_acquire"), when_acquire.clone());
+									});
+								}
+								if ui.checkbox(&mut when_acquire.copy_file, "Copia automaticamente il file nella clipboard").changed(){
+									ctx.memory_mut(|mem|{
+										mem.data.insert_temp(Id::from("when_acquire"), when_acquire.clone());
+									});
+								}
+							});
+						});
+						ui.add_space(30.0);
+						ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+							let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
+							let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
+							ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
+								ui.add_space(2.0);
+								ui.label("Ricorda l'area selezionata");
+							});
+							ui.add_space(20.0);
+							ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
+								ui.add(toggle(&mut save_region));
+								ctx.memory_mut(|mem|{
+									mem.data.insert_temp(Id::from("save_region"), save_region.clone());
+								});
+							});
+						});
 					});
 				}
 				Tab::Save => {
@@ -251,27 +301,6 @@ impl Content {
 										mem.data.insert_temp(Id::from("path"), new_path.clone());
 									});
 								};
-							});
-						});
-						ui.add_space(30.0);
-
-						//DEFAULT JPEG COMPRESSION
-						ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
-							let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
-							let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
-							ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
-								ui.add_space(2.0);
-								ui.label("Qualità di compressione JPEG");
-							});
-							ui.add_space(20.0);
-							ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-								ui.spacing_mut().item_spacing.x = 10.0;
-								ui.spacing_mut().slider_width = ui.spacing().text_edit_width;
-								if Slider::new(&mut jpeg_quality, 0..=100).show_value(true).step_by(1.0).ui(ui).changed(){
-									ctx.memory_mut(|mem|{
-										mem.data.insert_temp(Id::from("quality"), jpeg_quality.clone());
-									})
-								}
 							});
 						});
 						ui.add_space(30.0);
@@ -381,3 +410,94 @@ impl Content {
 	}
 }
 
+pub fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
+    // Widget code can be broken up in four steps:
+    //  1. Decide a size for the widget
+    //  2. Allocate space for it
+    //  3. Handle interactions with the widget (if any)
+    //  4. Paint the widget
+
+    // 1. Deciding widget size:
+    // You can query the `ui` how much space is available,
+    // but in this example we have a fixed size widget based on the height of a standard button:
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+
+    // 2. Allocating space:
+    // This is where we get a region of the screen assigned.
+    // We also tell the Ui to sense clicks in the allocated region.
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+
+    // 3. Interact: Time to check for clicks!
+    if response.clicked() {
+        *on = !*on;
+        response.mark_changed(); // report back that the value changed
+    }
+
+    // Attach some meta-data to the response which can be used by screen readers:
+    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, *on, ""));
+
+    // 4. Paint!
+    // Make sure we need to paint:
+    if ui.is_rect_visible(rect) {
+        // Let's ask for a simple animation from egui.
+        // egui keeps track of changes in the boolean associated with the id and
+        // returns an animated value in the 0-1 range for how much "on" we are.
+        let how_on = ui.ctx().animate_bool(response.id, *on);
+        // We will follow the current style by asking
+        // "how should something that is being interacted with be painted?".
+        // This will, for instance, give us different colors when the widget is hovered or clicked.
+        let visuals = ui.style().interact_selectable(&response, *on);
+        // All coordinates are in absolute screen coordinates so we use `rect` to place the elements.
+        let rect = rect.expand(visuals.expansion);
+        let radius = 0.5 * rect.height();
+        ui.painter()
+            .rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
+        // Paint the circle, animating it from left to right with `how_on`:
+        let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        let center = egui::pos2(circle_x, rect.center().y);
+        ui.painter()
+            .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+    }
+
+    // All done! Return the interaction response so the user can check what happened
+    // (hovered, clicked, ...) and maybe show a tooltip:
+    response
+}
+
+/// Here is the same code again, but a bit more compact:
+#[allow(dead_code)]
+fn toggle_ui_compact(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    if response.clicked() {
+        *on = !*on;
+        response.mark_changed();
+    }
+    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, *on, ""));
+
+    if ui.is_rect_visible(rect) {
+        let how_on = ui.ctx().animate_bool(response.id, *on);
+        let visuals = ui.style().interact_selectable(&response, *on);
+        let rect = rect.expand(visuals.expansion);
+        let radius = 0.5 * rect.height();
+        ui.painter()
+            .rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
+        let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        let center = egui::pos2(circle_x, rect.center().y);
+        ui.painter()
+            .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+    }
+
+    response
+}
+
+// A wrapper that allows the more idiomatic usage pattern: `ui.add(toggle(&mut my_bool))`
+/// iOS-style toggle switch.
+///
+/// ## Example:
+/// ``` ignore
+/// ui.add(toggle(&mut my_bool));
+/// ```
+pub fn toggle(on: &mut bool) -> impl egui::Widget + '_ {
+    move |ui: &mut egui::Ui| toggle_ui(ui, on)
+}
