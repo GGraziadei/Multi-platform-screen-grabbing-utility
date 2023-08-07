@@ -404,9 +404,18 @@ impl Content {
 								mem.data.remove::<Tab>(Id::from("tab"));
 								mem.data.remove::<String>(Id::from("path"))
 							});
+                            let mut c = self.configuration.write().unwrap();
+                            c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
+                            Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                            drop(c);
 							self.set_win_type(Main);
 						}
-						Button::new("Applica").rounding(8.0).ui(ui);
+						if Button::new("Applica").rounding(8.0).ui(ui).clicked(){
+                            let mut c = self.configuration.write().unwrap();
+                            c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
+                                   Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                            drop(c);
+                        }
 						if Button::new("Annulla").rounding(8.0).ui(ui).clicked(){
 							ctx.memory_mut(|mem| {
 								mem.data.remove::<Tab>(Id::from("tab"));
