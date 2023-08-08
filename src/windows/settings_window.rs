@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Area, Align2, Color32, Order, LayerId, Id, pos2, TextStyle, RichText, Stroke, Direction, TextEdit, ImageButton, Rect, text_edit, Slider, ComboBox, Sense, CursorIcon};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Area, Align2, Color32, Order, LayerId, Id, pos2, TextStyle, RichText, Stroke, Direction, TextEdit, ImageButton, Rect, text_edit, Slider, ComboBox, Sense, CursorIcon, DragValue};
 use egui_extras::RetainedImage;
 use log::info;
 use native_dialog::FileDialog;
@@ -268,6 +268,33 @@ impl Content {
                                     });
                                 });
                             });
+                            ui.add_space(30.0);
+                            ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+                                let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
+                                let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
+                                ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
+                                    ui.add_space(2.0);
+                                    ui.label("Ritardo prima di acquisire");
+                                });
+                                ui.add_space(20.0);
+                                ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
+                                    let mut delay_tmp = match delay {
+                                        Some(d) => d.as_secs(),
+                                        None => 0
+                                    };
+                                    let text_edit = DragValue::new(&mut delay_tmp).ui(ui);
+                                    if text_edit.changed() {
+                                        ctx.memory_mut(|mem|{
+                                            if delay_tmp == 0{
+                                                mem.data.insert_temp::<Option<Duration>>(Id::from("delay"), None);
+                                            }
+                                            else {
+                                                mem.data.insert_temp(Id::from("delay"), Some(Duration::from_secs(delay_tmp)));
+                                            }
+                                        });
+                                    }
+                                });
+                            });
                         });
                 }
                 Tab::Save => {
@@ -400,10 +427,6 @@ impl Content {
                         ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 
 						if Button::new("Conferma").ui(ui).clicked(){
-							ctx.memory_mut(|mem| {
-								mem.data.remove::<Tab>(Id::from("tab"));
-								mem.data.remove::<String>(Id::from("path"))
-							});
                             let mut c = self.configuration.write().unwrap();
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
                             Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
@@ -418,8 +441,7 @@ impl Content {
                         }
 						if Button::new("Annulla").ui(ui).clicked(){
 							ctx.memory_mut(|mem| {
-								mem.data.remove::<Tab>(Id::from("tab"));
-								mem.data.remove::<String>(Id::from("path"))
+								mem.data.clear();
 							});
 							self.set_win_type(Main);
 						}

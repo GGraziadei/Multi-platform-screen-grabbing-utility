@@ -1,8 +1,5 @@
-use std::cmp::min;
-use std::fmt::format;
 use eframe::emath::{Align, Vec2};
-use egui::{CentralPanel, Color32, ColorImage, Context, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, ScrollArea, TopBottomPanel};
-use egui::accesskit::Role::Group;
+use egui::{CentralPanel, ColorImage, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, ScrollArea, TopBottomPanel};
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::window::WindowType::{Main, Preview};
@@ -10,7 +7,7 @@ use crate::window::WindowType::{Main, Preview};
 impl Content {
 	pub fn select_screen_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
 		let mut first_render = true;
-    let bg_color = ctx.style().visuals.panel_fill;
+		let bg_color = ctx.style().visuals.panel_fill;
 		let margin = 20.0;
 		let mut images = vec![];
 		let image_bytes = ctx.memory(|mem| { mem.data.get_temp::<Vec<Vec<u8>>>(Id::from("bytes"))}).unwrap();
@@ -30,26 +27,26 @@ impl Content {
 				vec![]
 			}
 		};
-
+		
 		_frame.set_window_size(Vec2::new(800.0, 500.0));
-
+		
 		ctx.memory(|mem|{
 			let res = mem.data.get_temp::<bool>(Id::from("first_render"));
 			if res.is_some() {
 				first_render = res.unwrap();
 			}
 		});
-
+		
 		if first_render {
 			_frame.set_centered();
 			ctx.memory_mut(|mem| {
 				mem.data.insert_temp(Id::from("first_render"), false);
 			});
 		}
-
+		
 		CentralPanel::default()
-      .frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
-      .show(ctx, |ui| {
+			.frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
+			.show(ctx, |ui| {
 				ui.vertical_centered(|ui|{
 					ui.heading(RichText::new("Seleziona lo schermo").size(24.0));
 				});
@@ -66,21 +63,21 @@ impl Content {
 									Vec2::new(ui.available_width()/3.0 - 10.0, container_height),
 									Layout::top_down(Align::Center),
 									|ui|{
-								ui.with_layer_id(LayerId::new(Order::Foreground, Id::from(format!("image_{}", i))), |ui|{
-									ui.spacing_mut().item_spacing.y = 0.0;
-									let mut image_height = container_height - 30.0;
-									let aspect_ratio = image.width() as f32/ image.height() as f32;
-									let mut image_width = aspect_ratio * image_height;
-									if image_width > ui.available_width(){
-										image_width = ui.available_width();
-										image_height = image_width/aspect_ratio;
-										ui.add_space((150.0 - image_height)/2.0);
-									}
-									ui.image(image.texture_id(ctx), Vec2::new(image_width, image_height));
-									ui.add_space((150.0 - image_height)/2.0 + 10.0);
-									ui.label(format!("Schermo: {}", i));
-								});
-							}).response.rect);
+										ui.with_layer_id(LayerId::new(Order::Foreground, Id::from(format!("image_{}", i))), |ui|{
+											ui.spacing_mut().item_spacing.y = 0.0;
+											let mut image_height = container_height - 30.0;
+											let aspect_ratio = image.width() as f32/ image.height() as f32;
+											let mut image_width = aspect_ratio * image_height;
+											if image_width > ui.available_width(){
+												image_width = ui.available_width();
+												image_height = image_width/aspect_ratio;
+												ui.add_space((150.0 - image_height)/2.0);
+											}
+											ui.image(image.texture_id(ctx), Vec2::new(image_width, image_height));
+											ui.add_space((150.0 - image_height)/2.0 + 10.0);
+											ui.label(format!("Schermo: {}", i));
+										});
+									}).response.rect);
 						}
 						let mut selected_screen = -1;
 						for (n, rect) in rects.iter().enumerate() {
@@ -131,7 +128,7 @@ impl Content {
 						self.set_win_type(Main);
 					}
 				});
-		});
+			});
 	}
-
+	
 }

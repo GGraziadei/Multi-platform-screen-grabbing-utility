@@ -37,9 +37,9 @@ impl Content {
   pub fn get_enc(&self) -> &Arc<Mutex<Vec<EncoderThread>>> {
     &self.encoders
   }
-	pub fn set_win_type(&mut self, t: WindowType) {
-		self.window_type = t;
-	}
+  pub fn set_win_type(&mut self, t: WindowType) {
+    self.window_type = t;
+  }
   pub fn get_region(&self) -> Option<Rect> {
     self.region
   }
@@ -74,13 +74,13 @@ impl Content {
     
     self.colorimage = None;
   }
-
+  
   pub fn select_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     match self.get_se().screenshot_all() {
       Some(v) => {
         let mut img_bytes_vec = vec![];
         let mut fast_bytes_vec = vec![];
-
+        
         for i in v {
           let image = i.unwrap();
           let img_bytes = image.rgba().clone();
@@ -93,14 +93,14 @@ impl Content {
           mem.data.insert_temp(Id::from("r_bytes"), fast_bytes_vec.clone());
         });
         self.set_win_type(SelectScreen);
-
+        
       }
       None => {}
     }
-
+    
     self.colorimage = None;
   }
-
+  
   pub fn portion(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let di = self.get_current_screen_di(_frame);
     if di.is_some(){
@@ -158,10 +158,10 @@ impl Content {
   }
   
   pub fn save_image(&mut self, ctx: &Context, custom_path: Option<PathBuf>) {
-
+    
     let mut path : String;
     let mut format : ImageFmt;
-
+    
     if custom_path.is_some(){
       match custom_path.clone().unwrap().extension(){
         Some(ext) => {
@@ -190,10 +190,10 @@ impl Content {
       let save_path = configuration_read.get_save_path().unwrap();
       format = configuration_read.get_image_fmt().unwrap();
       drop(configuration_read);
-
+      
       path = Path::new(&save_path).join(format!("{}.{}",file_name,format)).to_str().unwrap().to_string();
     }
-
+    
     let imgf = match self.get_colorimage(){
       Some(img) => ImageFormatter::from(img),
       None => {
@@ -245,7 +245,7 @@ impl eframe::App for Content {
       region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
       region.max.y = (region.max.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
       colorimage = colorimage.region(&region, None);
-
+      
       self.region = None;
       self.colorimage = Some(colorimage.clone());
       self.set_win_type(Preview);
@@ -265,12 +265,12 @@ impl eframe::App for Content {
 
 pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor){
   let configuration_read = configuration.read()
-    .expect("Error. Cannot run gui thread without configuration file.");
-
+      .expect("Error. Cannot run gui thread without configuration file.");
+  
   let app_name_tmp = configuration_read.get_app_name().unwrap().clone();
-
+  
   drop(configuration_read);
-
+  
   let options = eframe::NativeOptions{
     resizable: false,
     follow_system_theme: true,
@@ -278,7 +278,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     // centered: true,
     ..Default::default()
   };
-
+  
   let content = Content{
     configuration,
     screenshot_executor: s,
@@ -288,7 +288,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     region: None,
     colorimage: None
   };
-
+  
   run_native(
     &*app_name_tmp,
     options,
