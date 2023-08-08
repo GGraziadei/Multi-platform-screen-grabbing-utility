@@ -75,7 +75,7 @@ impl Content {
 											}
 											ui.image(image.texture_id(ctx), Vec2::new(image_width, image_height));
 											ui.add_space((150.0 - image_height)/2.0 + 10.0);
-											ui.label(format!("Schermo: {}", i));
+											ui.label(format!("Schermo: {}", i+1));
 										});
 									}).response.rect);
 						}

@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Area, Align2, Color32, Order, LayerId, Id, pos2, TextStyle, RichText, Stroke, Direction, TextEdit, ImageButton, Rect, text_edit, Slider, ComboBox, Sense, CursorIcon, DragValue};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
 use egui_extras::RetainedImage;
-use log::info;
 use native_dialog::FileDialog;
-use crate::configuration::{AcquireAction, AcquireMode, Configuration, ImageFmt, KeyCombo};
+use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
 use crate::configuration::ImageFmt::{GIF, JPG, PNG};
 use crate::window::Content;
 use crate::window::WindowType::Main;
@@ -282,10 +281,14 @@ impl Content {
                                         Some(d) => d.as_secs(),
                                         None => 0
                                     };
-                                    let text_edit = DragValue::new(&mut delay_tmp).ui(ui);
+                                    let mut text_edit = DragValue::new(&mut delay_tmp).ui(ui);
+                                    if text_edit.clicked_elsewhere(){
+                                        text_edit.surrender_focus();
+                                    }
                                     if text_edit.changed() {
                                         ctx.memory_mut(|mem|{
-                                            if delay_tmp == 0{
+                                            println!("{}", delay_tmp);
+                                            if delay_tmp == 0 {
                                                 mem.data.insert_temp::<Option<Duration>>(Id::from("delay"), None);
                                             }
                                             else {
