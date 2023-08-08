@@ -209,7 +209,12 @@ impl Default for Configuration{
             region: None,
             when_capture: Default::default(),
             delay: None,
-            hot_key_map: HashMap::from([(AcquireMode::Portion, KeyCombo::new(Some(Modifiers::CTRL), Some(Key::S), None))]),
+            hot_key_map: HashMap::from([
+                (AcquireMode::Portion, KeyCombo::new(None, None, None)),
+                (AcquireMode::AllScreens, KeyCombo::new(None, None, None)),
+                (AcquireMode::SelectScreen, KeyCombo::new(None, None, None)),
+                (AcquireMode::CurrentScreen, KeyCombo::new(None, None, None))
+            ]),
         }
     }
 }
