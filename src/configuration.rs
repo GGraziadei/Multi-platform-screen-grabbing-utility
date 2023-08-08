@@ -116,9 +116,37 @@ impl  Display for KeyCombo {
         let mut next = false;
 
         if self.k1.is_some(){
-            let _str = format!("{:?}", self.k1.clone().unwrap());
-            str.push_str(_str.as_str());
-            next = true;
+            let command = self.k1.clone().unwrap();
+
+            if command.alt {
+                str.push_str("ALT");
+                next = true;
+            }
+
+            if command.ctrl {
+                if next {
+                    str.push('+');
+                }
+                str.push_str("CTRL");
+                next = true;
+            }
+
+            if command.shift {
+                if next {
+                    str.push('+');
+                }
+                str.push_str("SHIFT");
+                next = true;
+            }
+
+            if command.mac_cmd {
+                if next {
+                    str.push('+');
+                }
+                str.push_str("COMMAND");
+                next = true;
+            }
+
         }
 
         if self.k2.is_some(){
