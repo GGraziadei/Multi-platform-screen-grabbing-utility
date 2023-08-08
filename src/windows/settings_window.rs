@@ -173,21 +173,21 @@ impl Content {
                             let mouse_pos = i.pointer.hover_pos();
                             match mouse_pos {
                                 Some(pos) => {
-                                    if pos.x > rect1.min.x && pos.x < rect1.max.x && pos.y > rect1.min.y && pos.y < rect1.max.y {
+                                    if rect1.contains(pos) {
                                         if i.pointer.primary_clicked(){
                                             tab = Tab::General;
                                             tab_changed = true;
                                         }
                                         return 1_u8
                                     }
-                                    else if pos.x > rect2.min.x && pos.x < rect2.max.x && pos.y > rect2.min.y && pos.y < rect2.max.y {
+                                    else if rect2.contains(pos) {
                                         if i.pointer.primary_clicked(){
                                             tab = Tab::Save;
                                             tab_changed = true;
                                         }
                                         return 2_u8
                                     }
-                                    else if pos.x > rect3.min.x && pos.x < rect3.max.x && pos.y > rect3.min.y && pos.y < rect3.max.y {
+                                    else if rect3.contains(pos) {
                                         if i.pointer.primary_clicked(){
                                             tab = Tab::Shortcuts;
                                             tab_changed = true;
@@ -213,7 +213,7 @@ impl Content {
                                 .rect_filled(
                                     rects[(hover-1) as usize],
                                     8.0,
-                                    colors[(hover-1) as usize].linear_multiply(2.0)
+                                    ctx.style().visuals.widgets.inactive.bg_fill
                                 );
                         }
 
@@ -399,7 +399,7 @@ impl Content {
                         ui.spacing_mut().item_spacing.x = 10.0;
                         ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 
-						if Button::new("Conferma").rounding(8.0).ui(ui).clicked(){
+						if Button::new("Conferma").ui(ui).clicked(){
 							ctx.memory_mut(|mem| {
 								mem.data.remove::<Tab>(Id::from("tab"));
 								mem.data.remove::<String>(Id::from("path"))
@@ -410,13 +410,13 @@ impl Content {
                             drop(c);
 							self.set_win_type(Main);
 						}
-						if Button::new("Applica").rounding(8.0).ui(ui).clicked(){
+						if Button::new("Applica").ui(ui).clicked(){
                             let mut c = self.configuration.write().unwrap();
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
                                    Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
                         }
-						if Button::new("Annulla").rounding(8.0).ui(ui).clicked(){
+						if Button::new("Annulla").ui(ui).clicked(){
 							ctx.memory_mut(|mem| {
 								mem.data.remove::<Tab>(Id::from("tab"));
 								mem.data.remove::<String>(Id::from("path"))

@@ -185,16 +185,19 @@ impl Content {
 						ui.spacing_mut().item_spacing.y = 10.0;
 						ui.label(RichText::new("Acquisisci una nuova schermata").size(16.0));
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
-						if ui.button("Regione rettangolare").clicked(){
-							self.portion(ctx, _frame);
-						};
-						if ui.button("Tutti gli schermi").clicked(){
-							self.all_screens(ctx, _frame);
-						};
 						if ui.button("Schermo attuale").clicked(){
-							self.current_screen(ctx, _frame);
-						};
-						if ui.button("Impostazioni").clicked(){
+              self.current_screen(ctx, _frame);
+            };
+            if ui.button("Selziona schermo").clicked(){
+              self.select_screen(ctx, _frame);
+            };
+            if ui.button("Tutti gli schermi").clicked(){
+              self.all_screens(ctx, _frame);
+            };
+            if ui.button("Regione rettangolare").clicked(){
+              self.portion(ctx, _frame);
+            };
+            if ui.button("Impostazioni").clicked(){
               self.set_win_type(Settings);
             };
 					});

@@ -76,7 +76,6 @@ impl Content {
   }
 
   pub fn select_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-    let di = self.get_current_screen_di(_frame).unwrap();
     match self.get_se().screenshot_all() {
       Some(v) => {
         let mut img_bytes_vec = vec![];
@@ -193,7 +192,6 @@ impl Content {
       drop(configuration_read);
 
       path = Path::new(&save_path).join(format!("{}.{}",file_name,format)).to_str().unwrap().to_string();
-      println!("{}",path);
     }
 
     let imgf = match self.get_colorimage(){
