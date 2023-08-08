@@ -12,6 +12,7 @@ use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use chrono::Local;
 use directories::UserDirs;
+use log::info;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AcquireMode{
@@ -411,7 +412,7 @@ impl Configuration{
         let serialized =  serde_json::to_string(self).ok()?;
         let mut file = File::create(SETTINGS_FILE).ok()?;
         file.write(serialized.as_ref()).ok()?;
-
+        info!("settings updated");
         Some(SETTINGS_FILE)
     }
 

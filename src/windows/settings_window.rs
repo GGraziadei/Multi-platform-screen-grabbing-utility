@@ -281,14 +281,16 @@ impl Content {
                                 });
                                 ui.add_space(20.0);
                                 ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
+
                                     let mut delay_tmp = match delay {
                                         Some(d) => d.as_secs(),
                                         None => 0
                                     };
                                     let mut text_edit = DragValue::new(&mut delay_tmp).ui(ui);
+                                    let _ = ui.button("Valida");
                                     if text_edit.changed() {
+
                                         ctx.memory_mut(|mem|{
-                                            println!("{}", delay_tmp);
                                             if delay_tmp == 0 {
                                                 mem.data.insert_temp::<Option<Duration>>(Id::from("delay"), None);
                                             }
