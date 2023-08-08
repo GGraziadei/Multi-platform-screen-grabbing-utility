@@ -7,7 +7,7 @@ use std::hash::Hash;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Duration;
-use egui::{Key, Rect};
+use egui::{Key, Modifiers, Rect};
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use chrono::Local;
@@ -93,11 +93,11 @@ impl ImageFmt{
     }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone,PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
 pub struct KeyCombo{
-    k1 : Option<Key>,
-    k2 : Option<Key>,
-    k3 : Option<Key>
+    pub k1 : Option<Modifiers>,
+    pub k2 : Option<Key>,
+    pub k3 : Option<Key>
 }
 
 impl Default for KeyCombo{
@@ -110,30 +110,47 @@ impl Default for KeyCombo{
     }
 }
 
+impl  Display for KeyCombo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut str = String::new();
+        let mut next = false;
+
+        if self.k1.is_some(){
+            let _str = format!("{:?}", self.k1.clone().unwrap()).parse().unwrap();
+            str.push(_str);
+            next = true;
+        }
+
+        if self.k2.is_some(){
+            if next {
+                next = false;
+                str.push('+');
+            }
+            let _str = format!("{:?}", self.k2.clone().unwrap()).parse().unwrap();
+            str.push(_str);
+            next = true;
+        }
+
+        if self.k3.is_some(){
+            if next {
+                next = false;
+                str.push('+');
+            }
+            let _str = format!("{:?}", self.k3.clone().unwrap()).parse().unwrap();
+            str.push(_str);
+            next = true;
+        }
+
+        write!(f, "{}",str)
+    }
+}
+
 impl KeyCombo{
 
-    pub fn new(combo : Vec<Key>) -> Self
+    pub fn new(modifiers : Option<Modifiers>, k2 : Option<Key>, k3 : Option<Key>) -> Self
     {
-        assert!(combo.len()<=3 && combo.len()>0);
-
-        let mut k1 = None;
-        let mut k2 = None;
-        let mut k3 = None;
-
-        if combo.len() >= 1 {
-            k1 = Some(combo[0]);
-        }
-
-        if combo.len() >= 2 {
-            k1 = Some(combo[0]);
-        }
-
-        if combo.len() == 3 {
-            k1 = Some(combo[0]);
-        }
-
         Self{
-            k1,
+            k1 : modifiers,
             k2,
             k3,
         }
