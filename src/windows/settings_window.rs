@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Slider};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
@@ -55,7 +55,11 @@ impl Content {
             Some(hkm) => hkm,
             None => configuration_read.get_hot_key_map().unwrap()
         };
-
+        
+        for combo in hot_key_map.values(){
+            println!("{}", combo);
+        }
+        
         drop(configuration_read);
 
         _frame.set_window_size(Vec2::new(800.0, 400.0));
@@ -282,9 +286,6 @@ impl Content {
                                         None => 0
                                     };
                                     let mut text_edit = DragValue::new(&mut delay_tmp).ui(ui);
-                                    if text_edit.clicked_elsewhere(){
-                                        text_edit.surrender_focus();
-                                    }
                                     if text_edit.changed() {
                                         ctx.memory_mut(|mem|{
                                             println!("{}", delay_tmp);
@@ -415,8 +416,39 @@ impl Content {
                                 ui.heading(RichText::new("Scorciatoie").size(24.0));
                             });
                             ui.add_space(20.0);
-                            ui.with_layout(Layout::top_down(Align::LEFT), |ui|{
+                             ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+                                let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
+                                let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
+                                ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
+                                    ui.add_space(8.0);
+                                    ui.label("Schermo attuale");
+                                });
+                                ui.add_space(20.0);
+                                ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
+                                    ui.spacing_mut().item_spacing.x = 10.0;
+                                    let text_edit = TextEdit::singleline(&mut path).margin(Vec2::splat(8.0)).ui(ui);
+                                    if text_edit.changed(){
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::from("path"), path.clone());
+                                        })
+                                    }
+                                    let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_black.svg")).unwrap();
+                                    if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+                                        icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_white.svg")).unwrap();
+                                    }
+                                    let button_dim = text_edit.rect.height() - 8.0;
+                                    if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
+                                        let new_path = match FileDialog::new().show_open_single_dir().unwrap(){
+                                            Some(path) => path.to_str().unwrap().to_string(),
+                                            None => path.clone(),
+                                        };
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::from("path"), new_path.clone());
+                                        });
+                                    };
+                                });
                             });
+                            ui.add_space(30.0);
                         });
                 }
             }
@@ -431,6 +463,9 @@ impl Content {
 
 						if Button::new("Conferma").ui(ui).clicked(){
                             let mut c = self.configuration.write().unwrap();
+                            ctx.memory_mut(|mem| {
+								mem.data.clear();
+							});
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
                             Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
@@ -438,6 +473,9 @@ impl Content {
 						}
 						if Button::new("Applica").ui(ui).clicked(){
                             let mut c = self.configuration.write().unwrap();
+                            ctx.memory_mut(|mem| {
+								mem.data.clear();
+							});
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
                                    Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);

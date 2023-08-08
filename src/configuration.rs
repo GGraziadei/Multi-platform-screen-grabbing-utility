@@ -116,8 +116,8 @@ impl  Display for KeyCombo {
         let mut next = false;
 
         if self.k1.is_some(){
-            let _str = format!("{:?}", self.k1.clone().unwrap()).parse().unwrap();
-            str.push(_str);
+            let _str = format!("{:?}", self.k1.clone().unwrap());
+            str.push_str(_str.as_str());
             next = true;
         }
 
@@ -126,8 +126,8 @@ impl  Display for KeyCombo {
                 next = false;
                 str.push('+');
             }
-            let _str = format!("{:?}", self.k2.clone().unwrap()).parse().unwrap();
-            str.push(_str);
+            let _str = format!("{:?}", self.k2.clone().unwrap());
+            str.push_str(_str.as_str());
             next = true;
         }
 
@@ -136,8 +136,8 @@ impl  Display for KeyCombo {
                 next = false;
                 str.push('+');
             }
-            let _str = format!("{:?}", self.k3.clone().unwrap()).parse().unwrap();
-            str.push(_str);
+            let _str = format!("{:?}", self.k3.clone().unwrap());
+            str.push_str(_str.as_str());
             next = true;
         }
 
@@ -181,7 +181,7 @@ impl Default for Configuration{
             region: None,
             when_capture: Default::default(),
             delay: None,
-            hot_key_map: Default::default(),
+            hot_key_map: HashMap::from([(AcquireMode::Portion, KeyCombo::new(Some(Modifiers::CTRL), Some(Key::S), None))]),
         }
     }
 }
