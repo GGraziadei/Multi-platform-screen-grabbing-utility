@@ -74,14 +74,46 @@ impl Content{
                     let handle_bm_pos = pos2(init_pos.x + (reg_width/2.0), final_pos.y);
                     let handle_br_pos = final_pos;
                     
-                    let handle_tl_rect = Rect::from_center_size(handle_tl_pos, Vec2::splat(10.0));
-                    let handle_tm_rect = Rect::from_center_size(handle_tm_pos, Vec2::splat(10.0));
-                    let handle_tr_rect = Rect::from_center_size(handle_tr_pos, Vec2::splat(10.0));
-                    let handle_ml_rect = Rect::from_center_size(handle_ml_pos, Vec2::splat(10.0));
-                    let handle_mr_rect = Rect::from_center_size(handle_mr_pos, Vec2::splat(10.0));
-                    let handle_bl_rect = Rect::from_center_size(handle_bl_pos, Vec2::splat(10.0));
-                    let handle_bm_rect = Rect::from_center_size(handle_bm_pos, Vec2::splat(10.0));
-                    let handle_br_rect = Rect::from_center_size(handle_br_pos, Vec2::splat(10.0));
+                    let mut handle_tl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tl_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_tl_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_tm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tm_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_tm_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_tr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tr_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_tr_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_ml_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_ml_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_ml_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_mr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_mr_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_mr_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_bl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bl_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_bl_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_bm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bm_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_bm_pos, Vec2::splat(10.0))
+                    };
+                    
+                    let mut handle_br_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_br_rect"))){
+                        Some(r) => r,
+                        None => Rect::from_center_size(handle_br_pos, Vec2::splat(10.0))
+                    };
+                    
                     
                     let mut button_id = Id::new("button");
                     
@@ -126,27 +158,301 @@ impl Content{
                             }
                             else if handle_tl_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_tl_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_init_x = init_pos.x + dx;
+                                        let mut new_init_y = init_pos.y + dy;
+                                        
+                                        if new_init_x < 0.0 {
+                                            new_init_x = 0.0;
+                                        }
+                                        
+                                        if new_init_y < 0.0 {
+                                            new_init_y = 0.0;
+                                        }
+                                        
+                                        if new_init_x > final_pos.x - 10.0 {
+                                            new_init_x = final_pos.x - 10.0;
+                                        }
+
+                                        if new_init_y > final_pos.y - 10.0 {
+                                            new_init_y = final_pos.y - 10.0;
+                                        }
+                                        
+                                        let new_init_pos = pos2(new_init_x, new_init_y);
+                                        let new_region = Rect::from_min_max(new_init_pos, final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_tl_rect")));
+                                }
                             }
                             else if handle_tm_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_tm_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_init_y = init_pos.y + dy;
+                                        
+                                        if new_init_y < 0.0 {
+                                            new_init_y = 0.0;
+                                        }
+                                        
+                                        if new_init_y > final_pos.y - 10.0 {
+                                            new_init_y = final_pos.y - 10.0;
+                                        }
+                                        
+                                        let new_init_pos = pos2(init_pos.x, new_init_y);
+                                        let new_region = Rect::from_min_max(new_init_pos, final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_tm_rect")));
+                                }
                             }
                             else if handle_tr_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_tr_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_final_x = final_pos.x + dx;
+                                        let mut new_init_y = init_pos.y + dy;
+                                        
+                                        if new_final_x > window_size.x {
+                                            new_final_x = window_size.x;
+                                        }
+                                        
+                                        if new_init_y < 0.0 {
+                                            new_init_y = 0.0;
+                                        }
+                                        
+                                        if new_final_x < init_pos.x + 10.0 {
+                                            new_final_x = init_pos.x + 10.0;
+                                        }
+
+                                        if new_init_y > final_pos.y - 10.0 {
+                                            new_init_y = final_pos.y - 10.0;
+                                        }
+                                        
+                                        let new_init_pos = pos2(init_pos.x, new_init_y);
+                                        let new_final_pos = pos2(new_final_x, final_pos.y);
+                                        let new_region = Rect::from_min_max(new_init_pos, new_final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_tr_rect")));
+                                }
                             }
                             else if handle_ml_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_ml_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let mut new_init_x = init_pos.x + dx;
+                                        
+                                        if new_init_x < 0.0 {
+                                            new_init_x = 0.0;
+                                        }
+                                        
+                                        if new_init_x > final_pos.x - 10.0 {
+                                            new_init_x = final_pos.x - 10.0;
+                                        }
+                                        
+                                        let new_init_pos = pos2(new_init_x, init_pos.y);
+                                        let new_region = Rect::from_min_max(new_init_pos, final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_ml_rect")));
+                                }
                             }
                             else if handle_mr_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_mr_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let mut new_final_x = final_pos.x + dx;
+                                        
+                                        if new_final_x < init_pos.x + 10.0 {
+                                            new_final_x = init_pos.x + 10.0;
+                                        }
+                                        
+                                        if new_final_x > window_size.x {
+                                            new_final_x = window_size.x;
+                                        }
+                                        
+                                        let new_final_pos = pos2(new_final_x, final_pos.y);
+                                        let new_region = Rect::from_min_max(init_pos, new_final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_mr_rect")));
+                                }
                             }
                             else if handle_bl_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_bl_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_init_x = init_pos.x + dx;
+                                        let mut new_final_y = final_pos.y + dy;
+                                        
+                                        if new_init_x < 0.0 {
+                                            new_init_x = 0.0;
+                                        }
+                                        
+                                        if new_init_x > final_pos.x - 10.0 {
+                                            new_init_x = final_pos.x - 10.0;
+                                        }
+                                        
+                                        if new_final_y > window_size.y {
+                                            new_final_y = window_size.y;
+                                        }
+
+                                        if new_final_y < init_pos.y + 10.0 {
+                                            new_final_y = init_pos.y + 10.0;
+                                        }
+                                        
+                                        let new_init_pos = pos2(new_init_x, init_pos.y);
+                                        let new_final_pos = pos2(final_pos.x, new_final_y);
+                                        let new_region = Rect::from_min_max(new_init_pos, new_final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_bl_rect")));
+                                }
                             }
                             else if handle_bm_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_bm_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_final_y = final_pos.y + dy;
+                                        
+                                        if new_final_y < init_pos.y + 10.0 {
+                                            new_final_y = init_pos.y + 10.0;
+                                        }
+                                        
+                                        if new_final_y > window_size.y {
+                                            new_final_y = window_size.y;
+                                        }
+                                        
+                                        let new_final_pos = pos2(final_pos.x, new_final_y);
+                                        let new_region = Rect::from_min_max(init_pos, new_final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_bm_rect")));
+                                }
                             }
                             else if handle_br_rect.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
+                                if ctx.input(|i| i.pointer.primary_down()){
+                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("init_grab_pos"), pos);
+                                        mem.data.insert_temp(Id::new("handle_br_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
+                                    });
+                                    let curr_grab_pos = ctx.input(|i| i.pointer.hover_pos());
+                                    if init_grab_pos.is_some(){
+                                        let dx = curr_grab_pos.unwrap().x - init_grab_pos.unwrap().x;
+                                        let dy = curr_grab_pos.unwrap().y - init_grab_pos.unwrap().y;
+                                        let mut new_final_x = final_pos.x + dx;
+                                        let mut new_final_y = final_pos.y + dy;
+                                        
+                                        if new_final_x > window_size.x {
+                                            new_final_x = window_size.x;
+                                        }
+                                        
+                                        if new_final_y > window_size.y {
+                                            new_final_y = window_size.y;
+                                        }
+                                        
+                                        if new_final_x < init_pos.x + 10.0 {
+                                            new_final_x = final_pos.x + 10.0;
+                                        }
+
+                                        if new_final_y < init_pos.y + 10.0 {
+                                            new_final_y = final_pos.y + 10.0;
+                                        }
+                                        
+                                        let new_final_pos = pos2(new_final_x, new_final_y);
+                                        let new_region = Rect::from_min_max(init_pos, new_final_pos);
+                                        ctx.memory_mut(|mem|{
+                                            mem.data.insert_temp(Id::new("region"), new_region);
+                                        });
+                                    }
+                                }
+                                else {
+                                    ctx.memory_mut(|mem| mem.data.remove::<Rect>(Id::new("handle_br_rect")));
+                                }
                             }
                             else if r.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
