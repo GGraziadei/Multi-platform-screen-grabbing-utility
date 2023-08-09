@@ -1,5 +1,5 @@
 use eframe::Theme;
-use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
+use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::window::WindowType::Settings;
@@ -150,10 +150,10 @@ impl Content {
 						
 						painter.set_clip_rect(painter_rect);
 						// painter.rect_filled(painter_rect, 0.0, Color32::RED);
-						
+
 						if screenshot_ok {
 							let uv_rect = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
-							let mut image_rect = Rect::from_min_size(pos2(0.0,0.0), Vec2::new(0.0,0.0));
+							let image_rect;
 							if r_image.width() > r_image.height(){
 								let image_rect_w = size_x;
 								let image_rect_h = image_rect_w/r_image.width() as f32 * r_image.height() as f32;

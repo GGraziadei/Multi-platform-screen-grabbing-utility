@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Slider, KeyboardShortcut, Modifiers};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
@@ -16,13 +16,13 @@ enum Tab {
     Shortcuts
 }
 
-const time_buttons: [&str; 6] = ["%Y", "%m", "%d", "%H", "%M", "%S"];
-const time_strings: [&str; 6] = ["Anno", "Mese", "Giorno", "Ora", "Minuto", "Secondo"];
+const TIME_BUTTONS: [&str; 6] = ["%Y", "%m", "%d", "%H", "%M", "%S"];
+const TIME_STRINGS: [&str; 6] = ["Anno", "Mese", "Giorno", "Ora", "Minuto", "Secondo"];
 
 impl Content {
     pub fn settings_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
         let bg_color = ctx.style().visuals.panel_fill;
-        let (mut r, mut g, mut b, mut a) = bg_color.to_tuple();
+        let ( r,  g, b,  a) = bg_color.to_tuple();
         let selected_color = ctx.style().visuals.widgets.active.bg_fill;
 
         let configuration_read = self.configuration.read().unwrap();
@@ -48,7 +48,7 @@ impl Content {
             None => configuration_read.get_save_region()
         };
         let mut region = configuration_read.get_region();
-        let mut delay = match ctx.memory(|mem| mem.data.get_temp::<Option<Duration>>(Id::from("delay"))) {
+        let delay = match ctx.memory(|mem| mem.data.get_temp::<Option<Duration>>(Id::from("delay"))) {
             Some(d) => d,
             None => configuration_read.get_delay()
         };
@@ -72,11 +72,11 @@ impl Content {
         drop(configuration_read);
 
         _frame.set_window_size(Vec2::new(800.0, 400.0));
-        r = r - 10;
-        g = g - 10;
-        b = b - 10;
+        //r = r - 10;
+        //g = g - 10;
+        //b = b - 10;
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show(ctx, |_| {
             SidePanel::left("tabs")
                 .frame(Frame{ fill: bg_dark_color, inner_margin: Margin::same(10.0), ..Default::default()})
                 .exact_width(100.0)
@@ -283,7 +283,7 @@ impl Content {
                                         Some(d) => d.as_secs(),
                                         None => 0
                                     };
-                                    let mut text_edit = DragValue::new(&mut delay_tmp).ui(ui);
+                                    let text_edit = DragValue::new(&mut delay_tmp).ui(ui);
                                     ui.spacing_mut().button_padding.x = 8.0;
                                     let _ = ui.button("Salva");
                                     if text_edit.changed() {
@@ -384,16 +384,16 @@ impl Content {
                                     });
 
                                     ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
-                                        for i in 0..time_buttons.len() {
+                                        for i in 0..TIME_BUTTONS.len() {
                                             ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
-                                                if ui.label(RichText::new(time_buttons[i].to_string()).color(hex_color!("#005500")))
+                                                if ui.label(RichText::new(TIME_BUTTONS[i].to_string()).color(hex_color!("#005500")))
                                                     .interact(Sense::click())
                                                     .on_hover_cursor(CursorIcon::PointingHand)
                                                     .clicked()
                                                 {
-                                                    filename_pattern.push_str(time_buttons[i]);
+                                                    filename_pattern.push_str(TIME_BUTTONS[i]);
                                                 }
-                                                ui.label(time_strings[i]);
+                                                ui.label(TIME_STRINGS[i]);
                                             });
                                         }
                                         ctx.memory_mut(|mem|{

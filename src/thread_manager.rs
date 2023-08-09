@@ -6,10 +6,8 @@ use crate::image_formatter::EncoderThread;
 use crate::screenshots::{ScreenshotExecutor, ScreenshotExecutorThread};
 
 pub struct ThreadManager{
-    configuration : Arc<RwLock<Configuration>>,
     encoders: Arc<Mutex<Vec<EncoderThread>>>,
     screenshots_executor : ScreenshotExecutorThread,
-    gui_thread : GuiThread
 }
 
 impl ThreadManager{
@@ -29,21 +27,14 @@ impl ThreadManager{
         let (screenshot_executor,executor_thread) = ScreenshotExecutor::new(configuration.clone());
 
         let tm = ThreadManager{
-            configuration : configuration.clone(),
             encoders: encoders.clone(),
             screenshots_executor: executor_thread,
-            /*GuiThread is mapped over the main thread (ThreadManager)*/
-            gui_thread: GuiThread::new(configuration.clone(), encoders.clone(), screenshot_executor),
         };
 
-        tm
-    }
+        /*GuiThread is mapped over the main thread (ThreadManager)*/
+        GuiThread::new(configuration.clone(), encoders.clone(), screenshot_executor);
 
-    pub fn add_encoder(&mut self, e : EncoderThread)
-    {
-        let mut encoders = self.encoders.lock()
-            .expect("Error in encoders access");
-        encoders.push(e)
+        tm
     }
 
     pub fn join(self) -> ()
@@ -53,14 +44,14 @@ impl ThreadManager{
             .expect("Error in encoders lock");
 
         let screenshots_executor = self.screenshots_executor;
-        let gui_thread = self.gui_thread;
 
         for e in encoders
         {
-            let encoder_result = e.thread.join()
-                .expect("Error during encoder join");
-            match encoder_result {
-                Ok(_) => {}
+            info!("check status encoder_thread for {}", e.get_image_name());
+            match e.thread.join().expect("Error during encoder join") {
+                Ok(()) => {
+                    info!("thread joined.");
+                }
                 Err(e) => {
                     error!("Error error {}",e);
                 }
