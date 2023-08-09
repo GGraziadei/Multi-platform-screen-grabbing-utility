@@ -45,7 +45,7 @@ impl Content {
         };
         let mut save_region = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("save_region"))) {
             Some(sr) => sr,
-            None => configuration_read.get_save_region().unwrap()
+            None => configuration_read.get_save_region()
         };
         let mut delay = match ctx.memory(|mem| mem.data.get_temp::<Option<Duration>>(Id::from("delay"))) {
             Some(d) => d,

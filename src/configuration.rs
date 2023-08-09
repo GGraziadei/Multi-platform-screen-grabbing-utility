@@ -319,8 +319,8 @@ impl Configuration{
         Some(true)
     }
 
-    pub fn get_save_region(&self) -> Option<bool> {
-        Some(self.save_region)
+    pub fn get_save_region(&self) -> bool {
+        self.save_region
     }
 
     pub fn set_save_region(&mut self, save_region: bool) -> Option<bool> {
