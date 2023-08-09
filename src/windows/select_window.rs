@@ -98,7 +98,6 @@ impl Content{
                                 mem.data.remove::<bool>(Id::from("visible"));
                             });
                             drop(config);
-                            println!("{:?}", _frame.info().window_info.size);
                             _frame.request_screenshot();
                         }
                         ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui|{
