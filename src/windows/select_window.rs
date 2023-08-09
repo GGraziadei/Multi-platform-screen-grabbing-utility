@@ -61,6 +61,24 @@ impl Content{
                     let mut button_id = Id::new("button");
                     
                     let button = ui.with_layer_id(LayerId::new(Order::Foreground, Id::from("")), |ui|{
+                        let visible = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("visible"))){
+                            Some(v) => {
+                                v
+                            },
+                            None => {
+                                true
+                            }
+                        };
+                        ui.set_visible(visible);
+                        if !visible {
+                            self.set_region(r);
+                            let mut config = self.configuration.write().unwrap();
+                            if config.get_save_region() {
+                                config.set_region(r);
+                            }
+                            drop(config);
+                            _frame.request_screenshot();
+                        }
                         ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui|{
                             ui.visuals_mut().widgets.inactive.weak_bg_fill = Color32::RED;
                             ui.visuals_mut().widgets.hovered.weak_bg_fill = Color32::GREEN;
@@ -80,13 +98,9 @@ impl Content{
                                 ctx.highlight_widget(button_id);
                                 ctx.set_cursor_icon(CursorIcon::PointingHand);
                                 if ctx.input(|i| i.pointer.primary_clicked()){
-                                    self.set_region(r);
-                                    let mut config = self.configuration.write().unwrap();
-                                    if config.get_save_region() {
-                                        config.set_region(r);
-                                    }
-                                    drop(config);
-                                    _frame.request_screenshot();
+                                    ctx.memory_mut(|mem|{
+                                        mem.data.insert_temp(Id::new("visible"), false);
+                                    });
                                 }
                             }
                             else if r.contains(pos){
