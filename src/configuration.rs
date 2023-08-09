@@ -72,13 +72,13 @@ impl Display for ImageFmt{
 
 impl ImageFmt{
 
-    pub fn get_image_format(&self) -> Option<ImageFormat>
+    pub fn get_image_format(&self) -> ImageFormat
     {
-        Some(match self{
+        match self{
             ImageFmt::PNG => {ImageFormat::Png}
             ImageFmt::JPG => {ImageFormat::Jpeg}
             ImageFmt::GIF => {ImageFormat::Gif}
-        })
+        }
     }
 
     pub fn get_image_ext(&self) -> Option<String>

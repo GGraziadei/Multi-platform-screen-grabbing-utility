@@ -132,7 +132,7 @@ impl ImageFormatter{
         let mut p : String = String::from(path);
         // p.push_str(&fmt.get_image_ext().unwrap());
 
-        let image_format = fmt.get_image_format().unwrap();
+        let image_format = fmt.get_image_format();
 
         /*encoding is too expensive in execution time (see GIF encoding).
             spawn thread.

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Condvar, Mutex, RwLock};
+use std::sync::{Arc, Condvar, LockResult, Mutex, RwLock};
 use std::sync::mpsc::{Receiver, RecvError, SendError, sync_channel, SyncSender};
 use std::thread;
 use std::thread::{Builder, JoinHandle, spawn};
@@ -70,7 +70,14 @@ impl ScreenshotExecutor{
                 Ok(msg) => {
                     if let ScreenshotMessage::Print( pd) = msg {
 
-                        let configuration_lock = configuration.read().unwrap();
+                        let configuration_lock = match configuration.read() {
+                            Ok(c) => {c}
+                            Err(error) => {
+                                notifica::notify("Error in screenshot acquisition.", &error.to_string())
+                                    .expect("OS API error.");
+                                continue ;
+                            }
+                        };
                         Self::thread_executor_delay(configuration_lock.get_delay());
                         drop(configuration_lock);
 
@@ -78,7 +85,14 @@ impl ScreenshotExecutor{
                         let mut msg : ScreenshotMessage;
 
                         if pd.di.is_none() {
-                            let screens = Screen::all().unwrap();
+                            let screens = match Screen::all() {
+                                Ok(s) => {s}
+                                Err(error) => {
+                                    notifica::notify("Error in screenshot acquisition.", &error.to_string())
+                                        .expect("OS API error.");
+                                    continue;
+                                }
+                            };
                             let mut results = Vec::<anyhow::Result<Image>>::with_capacity(screens.len());
                             for s in screens.into_iter()  {
                                 results.push(s.capture());
@@ -86,6 +100,7 @@ impl ScreenshotExecutor{
                             msg = ScreenshotMessage::Images(results);
                         }
                         else{
+                            //pd.di is some for this reason we can unwrap()
                             let s = Screen::new(&pd.di.unwrap());
                             let img = match pd.ca {
                                 None => {s.capture()}
