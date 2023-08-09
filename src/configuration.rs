@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use directories::UserDirs;
 use log::info;
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AcquireMode{
     /*Current screen*/
     CurrentScreen,
@@ -159,11 +159,11 @@ impl  Display for KeyCombo {
 
 impl KeyCombo{
 
-    pub fn new(modifiers : Modifiers, keys: HashSet<Key>) -> Self
+    pub fn new(modifiers : Modifiers, key: Option<Key>) -> Self
     {
         Self{
             m: modifiers,
-            k: keys.iter().nth(0).map(|k| k.clone()),
+            k: key,
         }
     }
     
@@ -198,10 +198,10 @@ impl Default for Configuration{
             when_capture: Default::default(),
             delay: None,
             hot_key_map: HashMap::from([
-                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), HashSet::default()))
+                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), None))
             ]),
         }
     }

@@ -416,7 +416,10 @@ impl Content {
                             });
                             ui.add_space(20.0);
                             
-                            for (am , mut kc) in hot_key_map.clone().into_iter(){
+                            let mut hot_key_map_vec: Vec<(AcquireMode, KeyCombo)> = hot_key_map.clone().into_iter().collect();
+                            hot_key_map_vec.sort_by_key(|(am, _kc)| *am);
+                            
+                            for (am , mut kc) in hot_key_map_vec{
                                 ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
                                     let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
                                     let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
@@ -432,7 +435,7 @@ impl Content {
                                         if text_edit.has_focus(){
                                             if !kc.contains_key(){
                                                 kc = ctx.input(|i|{
-                                                    KeyCombo::new(i.modifiers.clone(), i.keys_down.clone())
+                                                    KeyCombo::new(i.modifiers.clone(), i.keys_down.clone().iter().nth(0).map(|k| k.clone()))
                                                 });
                                                 hot_key_map.insert(am, kc.clone());
                                                 ctx.memory_mut(|mem|{
