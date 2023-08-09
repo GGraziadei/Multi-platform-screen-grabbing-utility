@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use directories::UserDirs;
 use log::info;
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AcquireMode{
     /*Current screen*/
     CurrentScreen,
@@ -94,14 +94,14 @@ impl ImageFmt{
 #[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
 pub struct KeyCombo{
     pub m: Modifiers,
-    pub k1: Option<Key>,
+    pub k: Option<Key>,
 }
 
 impl Default for KeyCombo{
     fn default() -> Self {
         Self{
             m: Modifiers::default(),
-            k1: None,
+            k: None,
         }
     }
 }
@@ -143,12 +143,12 @@ impl  Display for KeyCombo {
         }
 
 
-        if self.k1.is_some(){
+        if self.k.is_some(){
             if next {
                 next = false;
                 str.push('+');
             }
-            let _str = format!("{:?}", self.k1.clone().unwrap());
+            let _str = format!("{:?}", self.k.clone().unwrap());
             str.push_str(_str.as_str());
             next = true;
         }
@@ -159,16 +159,16 @@ impl  Display for KeyCombo {
 
 impl KeyCombo{
 
-    pub fn new(modifiers : Modifiers, keys: HashSet<Key>) -> Self
+    pub fn new(modifiers : Modifiers, key: Option<Key>) -> Self
     {
         Self{
             m: modifiers,
-            k1: keys.iter().nth(0).map(|k| k.clone()),
+            k: key,
         }
     }
     
     pub fn contains_key(&self) -> bool {
-        self.k1.is_some()
+        self.k.is_some()
     }
     
 }
@@ -198,10 +198,10 @@ impl Default for Configuration{
             when_capture: Default::default(),
             delay: None,
             hot_key_map: HashMap::from([
-                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), HashSet::default())),
-                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), HashSet::default()))
+                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), None)),
+                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), None))
             ]),
         }
     }
@@ -319,8 +319,8 @@ impl Configuration{
         Some(true)
     }
 
-    pub fn get_save_region(&self) -> Option<bool> {
-        Some(self.save_region)
+    pub fn get_save_region(&self) -> bool {
+        self.save_region
     }
 
     pub fn set_save_region(&mut self, save_region: bool) -> Option<bool> {

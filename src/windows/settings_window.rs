@@ -45,8 +45,9 @@ impl Content {
         };
         let mut save_region = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("save_region"))) {
             Some(sr) => sr,
-            None => configuration_read.get_save_region().unwrap()
+            None => configuration_read.get_save_region()
         };
+        let mut region = configuration_read.get_region();
         let mut delay = match ctx.memory(|mem| mem.data.get_temp::<Option<Duration>>(Id::from("delay"))) {
             Some(d) => d,
             None => configuration_read.get_delay()
@@ -416,7 +417,10 @@ impl Content {
                             });
                             ui.add_space(20.0);
                             
-                            for (am , mut kc) in hot_key_map.clone().into_iter(){
+                            let mut hot_key_map_vec: Vec<(AcquireMode, KeyCombo)> = hot_key_map.clone().into_iter().collect();
+                            hot_key_map_vec.sort_by_key(|(am, _kc)| *am);
+                            
+                            for (am , mut kc) in hot_key_map_vec{
                                 ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
                                     let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
                                     let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
@@ -432,7 +436,7 @@ impl Content {
                                         if text_edit.has_focus(){
                                             if !kc.contains_key(){
                                                 kc = ctx.input(|i|{
-                                                    KeyCombo::new(i.modifiers.clone(), i.keys_down.clone())
+                                                    KeyCombo::new(i.modifiers.clone(), i.keys_down.clone().iter().nth(0).map(|k| k.clone()))
                                                 });
                                                 hot_key_map.insert(am, kc.clone());
                                                 ctx.memory_mut(|mem|{
@@ -475,8 +479,11 @@ impl Content {
                             ctx.memory_mut(|mem| {
 								mem.data.clear();
 							});
+                            if !save_region{
+                                region = None;
+                            }
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                            Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                            Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
 							self.set_win_type(Main);
 						}
@@ -487,8 +494,11 @@ impl Content {
 								mem.data.clear();
                                 mem.data.insert_temp(Id::from("tab"), tab.clone());
 							});
+                            if !save_region{
+                                region = None;
+                            }
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                                   Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                                   Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
                         }
 						if Button::new("Annulla").ui(ui).clicked(){

@@ -6,7 +6,7 @@ use egui::*;
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
-use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::{AcquireMode, Configuration, ImageFmt, KeyCombo};
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{ScreenshotExecutor};
 use WindowType::*;
@@ -69,8 +69,6 @@ impl Content {
       }
       Err(error) => {
         error!("{}" , error);
-        notifica::notify("Error in screenshot acquisition.", &error.to_string())
-            .expect("OS API error.");
       }
     }
     
@@ -121,8 +119,6 @@ impl Content {
         }
         Err(error) => {
           error!("{}",error);
-          notifica::notify("Error in screenshot acquisition.", &error.to_string())
-              .expect("OS API error.");
         }
       }
     }
@@ -156,7 +152,18 @@ impl Content {
   
   pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
     match Mouse::get_mouse_position() {
-      Mouse::Position { x, y } => DisplayInfo::from_point(x, y).ok(),
+      Mouse::Position { mut x, mut y } => {
+        for display in DisplayInfo::all().unwrap(){
+          let new_x = (x as f32/display.scale_factor) as i32;
+          let new_y = (y as f32/display.scale_factor) as i32;
+          if new_x > display.x && new_x < display.x + display.width as i32 && new_y > display.y && new_y < display.y + display.height as i32 {
+            x = new_x;
+            y = new_y;
+            break;
+          }
+        }
+        DisplayInfo::from_point(x, y).ok()
+      },
       Mouse::Error => panic!("Error in mouse position"),
     }
   }
@@ -265,6 +272,29 @@ impl eframe::App for Content {
   }
   
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    let configuration_read = self.configuration.read().unwrap();
+
+    let mut hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
+      Some(hkm) => hkm,
+      None => configuration_read.get_hot_key_map().unwrap()
+    };
+    drop(configuration_read);
+
+    for (am, kc) in hkm {
+      if kc.k.is_some(){
+        let shortcut = KeyboardShortcut::new(kc.m, kc.k.unwrap());
+        let mut i = ctx.input(|i| i.clone() );
+        if i.consume_shortcut(&shortcut){
+          match am {
+            AcquireMode::CurrentScreen => {self.current_screen(ctx, _frame)}
+            AcquireMode::SelectScreen => {self.select_screen(ctx, _frame)}
+            AcquireMode::AllScreens => {self.all_screens(ctx, _frame)}
+            AcquireMode::Portion => {self.portion(ctx, _frame)}
+          }
+        }
+      }
+    }
+
     match self.window_type{
       Main => self.main_window(ctx, _frame),
       Settings => self.settings_window(ctx, _frame),
