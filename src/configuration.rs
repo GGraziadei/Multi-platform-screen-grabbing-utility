@@ -1,16 +1,13 @@
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::File;
 use std::hash::Hash;
 use std::io::{Read, Write};
-use std::path::Path;
 use std::time::Duration;
 use egui::{Key, Modifiers, Rect};
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
-use chrono::Local;
 use directories::UserDirs;
 use log::info;
 
@@ -41,10 +38,10 @@ impl Default for AcquireMode{
 impl Display for AcquireMode{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            AcquireMode::CurrentScreen => { "Window" }
-            AcquireMode::SelectScreen => { "Active screen" }
-            AcquireMode::AllScreens => { "All screens" }
-            AcquireMode::Portion => { "Drag and drop" }
+            AcquireMode::CurrentScreen => { "Schermo corrente" }
+            AcquireMode::SelectScreen => { "Seleziona schermo" }
+            AcquireMode::AllScreens => { "Tutti gli schermi" }
+            AcquireMode::Portion => { "Regione rettangolare" }
         })
     }
 }
@@ -96,17 +93,15 @@ impl ImageFmt{
 
 #[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
 pub struct KeyCombo{
-    pub k1 : Option<Modifiers>,
-    pub k2 : Option<Key>,
-    pub k3 : Option<Key>
+    pub m: Modifiers,
+    pub k1: Option<Key>,
 }
 
 impl Default for KeyCombo{
     fn default() -> Self {
         Self{
+            m: Modifiers::default(),
             k1: None,
-            k2: None,
-            k3: None,
         }
     }
 }
@@ -116,74 +111,66 @@ impl  Display for KeyCombo {
         let mut str = String::new();
         let mut next = false;
 
+        let command = self.m.clone();
+
+        if command.alt {
+            str.push_str("ALT");
+            next = true;
+        }
+
+        if command.ctrl {
+            if next {
+                str.push('+');
+            }
+            str.push_str("CTRL");
+            next = true;
+        }
+
+        if command.shift {
+            if next {
+                str.push('+');
+            }
+            str.push_str("SHIFT");
+            next = true;
+        }
+
+        if command.mac_cmd {
+            if next {
+                str.push('+');
+            }
+            str.push_str("COMMAND");
+            next = true;
+        }
+
+
         if self.k1.is_some(){
-            let command = self.k1.clone().unwrap();
-
-            if command.alt {
-                str.push_str("ALT");
-                next = true;
-            }
-
-            if command.ctrl {
-                if next {
-                    str.push('+');
-                }
-                str.push_str("CTRL");
-                next = true;
-            }
-
-            if command.shift {
-                if next {
-                    str.push('+');
-                }
-                str.push_str("SHIFT");
-                next = true;
-            }
-
-            if command.mac_cmd {
-                if next {
-                    str.push('+');
-                }
-                str.push_str("COMMAND");
-                next = true;
-            }
-
-        }
-
-        if self.k2.is_some(){
             if next {
                 next = false;
                 str.push('+');
             }
-            let _str = format!("{:?}", self.k2.clone().unwrap());
+            let _str = format!("{:?}", self.k1.clone().unwrap());
             str.push_str(_str.as_str());
             next = true;
         }
-
-        if self.k3.is_some(){
-            if next {
-                next = false;
-                str.push('+');
-            }
-            let _str = format!("{:?}", self.k3.clone().unwrap());
-            str.push_str(_str.as_str());
-            next = true;
-        }
-
+        
         write!(f, "{}",str)
     }
 }
 
 impl KeyCombo{
 
-    pub fn new(modifiers : Option<Modifiers>, k2 : Option<Key>, k3 : Option<Key>) -> Self
+    pub fn new(modifiers : Modifiers, keys: HashSet<Key>) -> Self
     {
         Self{
-            k1 : modifiers,
-            k2,
-            k3,
+            m: modifiers,
+            k1: keys.iter().nth(0).map(|k| k.clone()),
         }
     }
+    
+    pub fn contains_key(&self) -> bool {
+        self.k1.is_some()
+    }
+    
 }
 
 #[derive(Serialize, Deserialize)]
@@ -211,10 +198,10 @@ impl Default for Configuration{
             when_capture: Default::default(),
             delay: None,
             hot_key_map: HashMap::from([
-                (AcquireMode::Portion, KeyCombo::new(None, None, None)),
-                (AcquireMode::AllScreens, KeyCombo::new(None, None, None)),
-                (AcquireMode::SelectScreen, KeyCombo::new(None, None, None)),
-                (AcquireMode::CurrentScreen, KeyCombo::new(None, None, None))
+                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), HashSet::default())),
+                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), HashSet::default())),
+                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), HashSet::default())),
+                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), HashSet::default()))
             ]),
         }
     }

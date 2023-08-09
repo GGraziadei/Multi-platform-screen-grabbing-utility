@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Slider};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Slider, KeyboardShortcut, Modifiers};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
@@ -55,19 +55,6 @@ impl Content {
             Some(hkm) => hkm,
             None => configuration_read.get_hot_key_map().unwrap()
         };
-        
-        for combo in hot_key_map.values(){
-            println!("{}", combo);
-        }
-        
-        drop(configuration_read);
-
-        _frame.set_window_size(Vec2::new(800.0, 400.0));
-        r = r - 10;
-        g = g - 10;
-        b = b - 10;
-
-        let bg_dark_color = Color32::from_rgba_unmultiplied(r,g,b,a);
 
         let mut tab = ctx.memory_mut(|mem|{
             if mem.data.get_temp::<Tab>(Id::from("tab")).is_none(){
@@ -78,6 +65,15 @@ impl Content {
                 mem.data.get_temp::<Tab>(Id::from("tab")).unwrap()
             }
         });
+
+        let bg_dark_color = Color32::from_rgba_unmultiplied(r,g,b,a);
+       
+        drop(configuration_read);
+
+        _frame.set_window_size(Vec2::new(800.0, 400.0));
+        r = r - 10;
+        g = g - 10;
+        b = b - 10;
 
         CentralPanel::default().show(ctx, |ui| {
             SidePanel::left("tabs")
@@ -280,14 +276,15 @@ impl Content {
                                     ui.label("Ritardo prima di acquisire");
                                 });
                                 ui.add_space(20.0);
-                                ui.allocate_ui_with_layout(right_size,Layout::top_down(Align::LEFT), |ui|{
+                                ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
 
                                     let mut delay_tmp = match delay {
                                         Some(d) => d.as_secs(),
                                         None => 0
                                     };
                                     let mut text_edit = DragValue::new(&mut delay_tmp).ui(ui);
-                                    let _ = ui.button("Valida");
+                                    ui.spacing_mut().button_padding.x = 8.0;
+                                    let _ = ui.button("Salva");
                                     if text_edit.changed() {
 
                                         ctx.memory_mut(|mem|{
@@ -418,39 +415,49 @@ impl Content {
                                 ui.heading(RichText::new("Scorciatoie").size(24.0));
                             });
                             ui.add_space(20.0);
-                             ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
-                                let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
-                                let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
-                                ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
-                                    ui.add_space(8.0);
-                                    ui.label("Schermo attuale");
-                                });
-                                ui.add_space(20.0);
-                                ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
-                                    ui.spacing_mut().item_spacing.x = 10.0;
-                                    let text_edit = TextEdit::singleline(&mut path).margin(Vec2::splat(8.0)).ui(ui);
-                                    if text_edit.changed(){
-                                        ctx.memory_mut(|mem|{
-                                            mem.data.insert_temp(Id::from("path"), path.clone());
-                                        })
-                                    }
-                                    let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_black.svg")).unwrap();
-                                    if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
-                                        icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_white.svg")).unwrap();
-                                    }
-                                    let button_dim = text_edit.rect.height() - 8.0;
-                                    if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
-                                        let new_path = match FileDialog::new().show_open_single_dir().unwrap(){
-                                            Some(path) => path.to_str().unwrap().to_string(),
-                                            None => path.clone(),
+                            
+                            for (am , mut kc) in hot_key_map.clone().into_iter(){
+                                ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+                                    let left_size = Vec2::new(ui.available_size()[0]*0.3, ui.available_size()[1]);
+                                    let right_size = Vec2::new(ui.available_size()[0]*0.7, ui.available_size()[1]);
+                                    ui.allocate_ui_with_layout(left_size,Layout::top_down(Align::RIGHT), |ui|{
+                                        ui.add_space(8.0);
+                                        ui.label(am.to_string());
+                                    });
+                                    ui.add_space(20.0);
+                                    
+                                    ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
+                                        ui.spacing_mut().item_spacing.x = 10.0;
+                                        let mut text_edit = TextEdit::singleline(&mut kc.to_string()).margin(Vec2::splat(8.0)).ui(ui);
+                                        if text_edit.has_focus(){
+                                            if !kc.contains_key(){
+                                                kc = ctx.input(|i|{
+                                                    KeyCombo::new(i.modifiers.clone(), i.keys_down.clone())
+                                                });
+                                                hot_key_map.insert(am, kc.clone());
+                                                ctx.memory_mut(|mem|{
+                                                    mem.data.insert_temp(Id::from("hot_key_map"), hot_key_map.clone());
+                                                })
+                                            }
+                                            else {
+                                                text_edit = text_edit.interact(Sense::hover());
+                                            }
+                                        }
+                                        let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_black.svg")).unwrap();
+                                        if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+                                            icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_white.svg")).unwrap();
+                                        }
+                                        let button_dim = text_edit.rect.height() - 8.0;
+                                        if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
+                                            hot_key_map.insert(am, KeyCombo::default());
+                                            ctx.memory_mut(|mem|{
+                                                mem.data.insert_temp(Id::from("hot_key_map"), hot_key_map.clone());
+                                            })
                                         };
-                                        ctx.memory_mut(|mem|{
-                                            mem.data.insert_temp(Id::from("path"), new_path.clone());
-                                        });
-                                    };
+                                    });
                                 });
-                            });
-                            ui.add_space(30.0);
+                            ui.add_space(10.0);
+                            }
                         });
                 }
             }
@@ -476,7 +483,9 @@ impl Content {
 						if Button::new("Applica").ui(ui).clicked(){
                             let mut c = self.configuration.write().unwrap();
                             ctx.memory_mut(|mem| {
+                                let tab = mem.data.get_temp::<Tab>(Id::from("tab")).unwrap();
 								mem.data.clear();
+                                mem.data.insert_temp(Id::from("tab"), tab.clone());
 							});
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
                                    Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
