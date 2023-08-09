@@ -69,6 +69,8 @@ impl Content {
       }
       Err(error) => {
         error!("{}" , error);
+        notifica::notify("Error in screenshot acquisition.", &error.to_string())
+            .expect("OS API error.");
       }
     }
     
@@ -119,6 +121,8 @@ impl Content {
         }
         Err(error) => {
           error!("{}",error);
+          notifica::notify("Error in screenshot acquisition.", &error.to_string())
+              .expect("OS API error.");
         }
       }
     }
@@ -239,7 +243,15 @@ impl eframe::App for Content {
     if self.region.is_some(){
       // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
       let mut region = self.region.unwrap();
-      let mut colorimage = _frame.screenshot().unwrap(); //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
+      let mut colorimage = match _frame.screenshot(){
+        None => {
+          notifica::notify("Error in screenshot acquisition.", "")
+              .expect("OS API error.");
+          self.set_win_type(Preview);
+          return;
+        }
+        Some(s) => {s}
+      }; //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
       region.min.x = (region.min.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
       region.min.y = (region.min.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
       region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
