@@ -39,10 +39,10 @@ impl Content {
 		else {
 			ctx.memory(|mem|{
 				let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-				if fast_bytes.is_some(){
+				if let Some(screenshot) = fast_bytes{
 					r_image = RetainedImage::from_image_bytes(
 						"screenshot",
-						fast_bytes.unwrap().as_slice()
+						screenshot.as_slice()
 					).unwrap();
 					screenshot_ok = true;
 				}
@@ -110,14 +110,19 @@ impl Content {
 								icon_size,
 								"Salva come...")).clicked()
 						{
-							let path = native_dialog::FileDialog::new()
+							match native_dialog::FileDialog::new()
 								.add_filter("png", &["png"])
 								.add_filter("jpg", &["jpg"])
 								.add_filter("gif", &["gif"])
-								.show_save_single_file().unwrap();
-							if path.is_some(){
-								self.save_image(ctx, path);
-							}
+								.show_save_single_file() {
+								Ok(path) => {
+									self.save_image(ctx, path);
+								}
+								Err(error) => {
+									notifica::notify("Error during FileDialog open", &error.to_string())
+										.expect("OS API error.");
+								}
+							};
 						}
 						if ui.add(
 							Button::image_and_text(
