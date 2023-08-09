@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::default::Default;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
@@ -6,7 +7,7 @@ use egui::*;
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
-use crate::configuration::{Configuration, ImageFmt};
+use crate::configuration::{AcquireMode, Configuration, ImageFmt, KeyCombo};
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{ScreenshotExecutor};
 use WindowType::*;
@@ -253,6 +254,29 @@ impl eframe::App for Content {
   }
   
   fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    let configuration_read = self.configuration.read().unwrap();
+    
+    let mut hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
+        Some(hkm) => hkm,
+        None => configuration_read.get_hot_key_map().unwrap()
+    };
+    drop(configuration_read);
+    
+    for (am, kc) in hkm {
+      if kc.k.is_some(){
+        let shortcut = KeyboardShortcut::new(kc.m, kc.k.unwrap());
+        let mut i = ctx.input(|i| i.clone() );
+        if i.consume_shortcut(&shortcut){
+          match am {
+            AcquireMode::CurrentScreen => {self.current_screen(ctx, _frame)}
+            AcquireMode::SelectScreen => {self.select_screen(ctx, _frame)}
+            AcquireMode::AllScreens => {self.all_screens(ctx, _frame)}
+            AcquireMode::Portion => {self.portion(ctx, _frame)}
+          }
+        }
+      }
+    }
+    
     match self.window_type{
       Main => self.main_window(ctx, _frame),
       Settings => self.settings_window(ctx, _frame),

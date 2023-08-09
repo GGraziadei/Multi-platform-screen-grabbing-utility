@@ -94,14 +94,14 @@ impl ImageFmt{
 #[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
 pub struct KeyCombo{
     pub m: Modifiers,
-    pub k1: Option<Key>,
+    pub k: Option<Key>,
 }
 
 impl Default for KeyCombo{
     fn default() -> Self {
         Self{
             m: Modifiers::default(),
-            k1: None,
+            k: None,
         }
     }
 }
@@ -143,12 +143,12 @@ impl  Display for KeyCombo {
         }
 
 
-        if self.k1.is_some(){
+        if self.k.is_some(){
             if next {
                 next = false;
                 str.push('+');
             }
-            let _str = format!("{:?}", self.k1.clone().unwrap());
+            let _str = format!("{:?}", self.k.clone().unwrap());
             str.push_str(_str.as_str());
             next = true;
         }
@@ -163,12 +163,12 @@ impl KeyCombo{
     {
         Self{
             m: modifiers,
-            k1: keys.iter().nth(0).map(|k| k.clone()),
+            k: keys.iter().nth(0).map(|k| k.clone()),
         }
     }
     
     pub fn contains_key(&self) -> bool {
-        self.k1.is_some()
+        self.k.is_some()
     }
     
 }
