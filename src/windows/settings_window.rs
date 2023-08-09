@@ -47,6 +47,7 @@ impl Content {
             Some(sr) => sr,
             None => configuration_read.get_save_region()
         };
+        let mut region = configuration_read.get_region();
         let mut delay = match ctx.memory(|mem| mem.data.get_temp::<Option<Duration>>(Id::from("delay"))) {
             Some(d) => d,
             None => configuration_read.get_delay()
@@ -478,8 +479,11 @@ impl Content {
                             ctx.memory_mut(|mem| {
 								mem.data.clear();
 							});
+                            if !save_region{
+                                region = None;
+                            }
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                            Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                            Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
 							self.set_win_type(Main);
 						}
@@ -490,8 +494,11 @@ impl Content {
 								mem.data.clear();
                                 mem.data.insert_temp(Id::from("tab"), tab.clone());
 							});
+                            if !save_region{
+                                region = None;
+                            }
                             c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                                   Some(save_region), None, Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                                   Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
                             drop(c);
                         }
 						if Button::new("Annulla").ui(ui).clicked(){

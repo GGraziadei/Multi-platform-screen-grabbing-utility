@@ -1,8 +1,6 @@
 use eframe::epaint::{ColorImage, hex_color, Stroke};
 use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Response, Sense, Vec2};
 use egui_extras::RetainedImage;
-use image::imageops::resize;
-use screenshots::{DisplayInfo, };
 use crate::window::{Content, };
 
 impl Content{
@@ -13,6 +11,7 @@ impl Content{
 			let window_size: Vec2 = Vec2::new(_frame.info().window_info.size.x, _frame.info().window_info.size.y);
 			let mut screenshot_ok = false;
             let config = self.configuration.read().unwrap();
+            let green = hex_color!("#16A085");
 		
             let region = match config.get_save_region() {
                 true => {
@@ -31,6 +30,14 @@ impl Content{
             };
             
             let init_grab_pos = ctx.memory(|mem| mem.data.get_temp::<Pos2>(Id::from("init_grab_pos")));
+            let visible = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("visible"))){
+                Some(v) => {
+                    v
+                },
+                None => {
+                    true
+                }
+            };
             
 		    drop(config);
 			
@@ -55,20 +62,30 @@ impl Content{
                 Some(r) => {
                     let mut init_pos = r.min;
                     let mut final_pos = r.max;
-                    let mut reg_width = final_pos.x - init_pos.x;
-                    let mut reg_height = final_pos.y - init_pos.y;
+                    let reg_width = final_pos.x - init_pos.x;
+                    let reg_height = final_pos.y - init_pos.y;
+                    
+                    let handle_tl_pos = init_pos;
+                    let handle_tm_pos = pos2(init_pos.x + (reg_width/2.0), init_pos.y);
+                    let handle_tr_pos = pos2(final_pos.x, init_pos.y);
+                    let handle_ml_pos = pos2(init_pos.x, init_pos.y + (reg_height/2.0));
+                    let handle_mr_pos = pos2(final_pos.x, init_pos.y + (reg_height/2.0));
+                    let handle_bl_pos = pos2(init_pos.x, final_pos.y);
+                    let handle_bm_pos = pos2(init_pos.x + (reg_width/2.0), final_pos.y);
+                    let handle_br_pos = final_pos;
+                    
+                    let handle_tl_rect = Rect::from_center_size(handle_tl_pos, Vec2::splat(10.0));
+                    let handle_tm_rect = Rect::from_center_size(handle_tm_pos, Vec2::splat(10.0));
+                    let handle_tr_rect = Rect::from_center_size(handle_tr_pos, Vec2::splat(10.0));
+                    let handle_ml_rect = Rect::from_center_size(handle_ml_pos, Vec2::splat(10.0));
+                    let handle_mr_rect = Rect::from_center_size(handle_mr_pos, Vec2::splat(10.0));
+                    let handle_bl_rect = Rect::from_center_size(handle_bl_pos, Vec2::splat(10.0));
+                    let handle_bm_rect = Rect::from_center_size(handle_bm_pos, Vec2::splat(10.0));
+                    let handle_br_rect = Rect::from_center_size(handle_br_pos, Vec2::splat(10.0));
                     
                     let mut button_id = Id::new("button");
                     
                     let button = ui.with_layer_id(LayerId::new(Order::Foreground, Id::from("")), |ui|{
-                        let visible = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("visible"))){
-                            Some(v) => {
-                                v
-                            },
-                            None => {
-                                true
-                            }
-                        };
                         ui.set_visible(visible);
                         if !visible {
                             self.set_region(r);
@@ -76,12 +93,17 @@ impl Content{
                             if config.get_save_region() {
                                 config.set_region(r);
                             }
+                            ctx.memory_mut(|mem| {
+                                mem.data.remove::<Rect>(Id::from("region"));
+                                mem.data.remove::<bool>(Id::from("visible"));
+                            });
                             drop(config);
+                            println!("{:?}", _frame.info().window_info.size);
                             _frame.request_screenshot();
                         }
                         ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui|{
                             ui.visuals_mut().widgets.inactive.weak_bg_fill = Color32::RED;
-                            ui.visuals_mut().widgets.hovered.weak_bg_fill = Color32::GREEN;
+                            ui.visuals_mut().widgets.hovered.weak_bg_fill = green;
                             ui.spacing_mut().button_padding = Vec2::splat(10.0);
                             let button_widget = ui.button("Salva");
                             button_id = button_widget.id;
@@ -102,6 +124,30 @@ impl Content{
                                         mem.data.insert_temp(Id::new("visible"), false);
                                     });
                                 }
+                            }
+                            else if handle_tl_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_tm_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_tr_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_ml_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_mr_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_bl_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_bm_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
+                            }
+                            else if handle_br_rect.contains(pos){
+                                ctx.set_cursor_icon(CursorIcon::Grab);
                             }
                             else if r.contains(pos){
                                 ctx.set_cursor_icon(CursorIcon::Grab);
@@ -157,7 +203,19 @@ impl Content{
                     painter.rect_filled(Rect::from_min_max(pos2(final_pos.x, 0.0), pos2(window_size.x, window_size.y)), 0.0, hex_color!("#00000064"));
                     init_pos = pos2(init_pos.x-1.5, init_pos.y-1.5);
                     final_pos = pos2(final_pos.x+1.5, final_pos.y+1.5);
-                    painter.rect_stroke(Rect::from_min_max(init_pos, final_pos), 0.0, Stroke::new(0.5, Color32::GREEN));
+                    painter.rect_stroke(Rect::from_min_max(init_pos, final_pos), 0.0, Stroke::new(0.5, green));
+                    
+                    if visible{
+                        painter.circle_filled(handle_tl_pos, 10.0, green);
+                        painter.circle_filled(handle_tm_pos, 10.0, green);
+                        painter.circle_filled(handle_tr_pos, 10.0, green);
+                        painter.circle_filled(handle_ml_pos, 10.0, green);
+                        painter.circle_filled(handle_mr_pos, 10.0, green);
+                        painter.circle_filled(handle_bl_pos, 10.0, green);
+                        painter.circle_filled(handle_bm_pos, 10.0, green);
+                        painter.circle_filled(handle_br_pos, 10.0, green);
+                    }
+                    
                 },
                 None => {
 			        ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
@@ -213,7 +271,7 @@ impl Content{
                             painter.rect_filled(Rect::from_min_max(pos2(curr_pos.x, 0.0), pos2(window_size.x, window_size.y)), 0.0, hex_color!("#00000064"));
                             init_pos = pos2(init_pos.x-1.5, init_pos.y-1.5);
                             curr_pos = pos2(curr_pos.x+1.5, curr_pos.y+1.5);
-                            painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.5, Color32::GREEN));
+                            painter.rect_stroke(Rect::from_min_max(init_pos, curr_pos), 0.0, Stroke::new(0.5, green));
                         }
                         else {
                             painter.rect_filled(Rect::from_min_size(pos2(0.0,0.0), window_size), 0.0, hex_color!("#00000064"));

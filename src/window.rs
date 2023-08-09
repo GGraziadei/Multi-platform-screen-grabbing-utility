@@ -238,9 +238,8 @@ impl Content {
 impl eframe::App for Content {
   fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
     if self.region.is_some(){
-      // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
       let mut region = self.region.unwrap();
-      let mut colorimage = _frame.screenshot().unwrap(); //.region(&Rect::from_min_max(pos2(0.0, 0.0), pos2(1920.0, 1080.0)), None);
+      let mut colorimage = _frame.screenshot().unwrap();
       region.min.x = (region.min.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
       region.min.y = (region.min.y*colorimage.size[1] as f32)/_frame.info().window_info.size.y;
       region.max.x = (region.max.x*colorimage.size[0] as f32)/_frame.info().window_info.size.x;
@@ -257,8 +256,8 @@ impl eframe::App for Content {
     let configuration_read = self.configuration.read().unwrap();
     
     let mut hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
-        Some(hkm) => hkm,
-        None => configuration_read.get_hot_key_map().unwrap()
+      Some(hkm) => hkm,
+      None => configuration_read.get_hot_key_map().unwrap()
     };
     drop(configuration_read);
     

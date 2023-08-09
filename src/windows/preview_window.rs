@@ -7,7 +7,7 @@ use crate::window::WindowType::Settings;
 impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
 		let window_size = _frame.info().window_info.size;
-    let bg_color = ctx.style().visuals.panel_fill;
+		let bg_color = ctx.style().visuals.panel_fill;
 		let w = 0.6;
 		let margin = 20.0;
 		let mut first_render = true;
@@ -48,53 +48,53 @@ impl Content {
 				}
 			});
 		}
-
-    TopBottomPanel::top("top")
-      .frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
-      .show_separator_line(false)
-      .resizable(false)
-      .show(ctx, |ui| {
-        ui.with_layout(
+		
+		TopBottomPanel::top("top")
+			.frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
+			.show_separator_line(false)
+			.resizable(false)
+			.show(ctx, |ui| {
+				ui.with_layout(
 					Layout::left_to_right(Align::LEFT),
 					|ui| {
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 						ui.spacing_mut().item_spacing.x = 10.0;
 						let icon_size = Vec2::new(16.0,16.0);
-
+						
 						let mut save_icon = RetainedImage::from_svg_bytes_with_size(
-									"save",
-									include_bytes!("../images/save_black.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
+							"save",
+							include_bytes!("../images/save_black.svg"),
+							egui_extras::image::FitTo::Original).unwrap();
 						let mut save_as_icon = RetainedImage::from_svg_bytes_with_size(
-								"save_as",
-								include_bytes!("../images/save_as_black.svg"),
-								egui_extras::image::FitTo::Original).unwrap();
+							"save_as",
+							include_bytes!("../images/save_as_black.svg"),
+							egui_extras::image::FitTo::Original).unwrap();
 						let mut copy_icon = RetainedImage::from_svg_bytes_with_size(
-								"copy",
-								include_bytes!("../images/copy_black.svg"),
-								egui_extras::image::FitTo::Original).unwrap();
+							"copy",
+							include_bytes!("../images/copy_black.svg"),
+							egui_extras::image::FitTo::Original).unwrap();
 						let mut edit_icon = RetainedImage::from_svg_bytes_with_size(
-								"edit",
-								include_bytes!("../images/edit_black.svg"),
-								egui_extras::image::FitTo::Original).unwrap();
-
+							"edit",
+							include_bytes!("../images/edit_black.svg"),
+							egui_extras::image::FitTo::Original).unwrap();
+						
 						if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
 							save_icon = RetainedImage::from_svg_bytes_with_size(
-									"save",
-									include_bytes!("../images/save_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
+								"save",
+								include_bytes!("../images/save_white.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
 							save_as_icon = RetainedImage::from_svg_bytes_with_size(
-									"save_as",
-									include_bytes!("../images/save_as_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
+								"save_as",
+								include_bytes!("../images/save_as_white.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
 							copy_icon = RetainedImage::from_svg_bytes_with_size(
-									"copy",
-									include_bytes!("../images/copy_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
+								"copy",
+								include_bytes!("../images/copy_white.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
 							edit_icon = RetainedImage::from_svg_bytes_with_size(
-									"edit",
-									include_bytes!("../images/edit_white.svg"),
-									egui_extras::image::FitTo::Original).unwrap();
+								"edit",
+								include_bytes!("../images/edit_white.svg"),
+								egui_extras::image::FitTo::Original).unwrap();
 						}
 						if ui.add(
 							Button::image_and_text(
@@ -133,7 +133,7 @@ impl Content {
 								"Annota")).clicked(){}
 					}
 				);
-      });
+			});
 		SidePanel::left("left")
 			.frame(Frame{inner_margin: Margin::same(20.0), fill: bg_color, ..Default::default()})
 			.show_separator_line(false)
@@ -147,17 +147,17 @@ impl Content {
 						let size_x = ui.available_width();
 						let size_y = ui.available_height();
 						let painter_rect = Rect::from_min_size(pos2(margin,window_size.y-size_y - margin), Vec2::new(size_x, size_y));
-
+						
 						painter.set_clip_rect(painter_rect);
 						// painter.rect_filled(painter_rect, 0.0, Color32::RED);
-
+						
 						if screenshot_ok {
 							let uv_rect = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
 							let mut image_rect = Rect::from_min_size(pos2(0.0,0.0), Vec2::new(0.0,0.0));
 							if r_image.width() > r_image.height(){
 								let image_rect_w = size_x;
 								let image_rect_h = image_rect_w/r_image.width() as f32 * r_image.height() as f32;
-								let start_y = (window_size.y-size_y) - margin + (size_y/2.0) - (image_rect_h/2.0);
+								let start_y = (window_size.y-size_y) - margin;
 								// let start_y = (window_size.y-size_y) - margin;
 								image_rect = Rect::from_min_size(pos2(margin,start_y), Vec2::new(image_rect_w, image_rect_h));
 							}
@@ -186,20 +186,20 @@ impl Content {
 						ui.label(RichText::new("Acquisisci una nuova schermata").size(16.0));
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 						if ui.button("Schermo attuale").clicked(){
-              self.current_screen(ctx, _frame);
-            };
-            if ui.button("Selziona schermo").clicked(){
-              self.select_screen(ctx, _frame);
-            };
-            if ui.button("Tutti gli schermi").clicked(){
-              self.all_screens(ctx, _frame);
-            };
-            if ui.button("Regione rettangolare").clicked(){
-              self.portion(ctx, _frame);
-            };
-            if ui.button("Impostazioni").clicked(){
-              self.set_win_type(Settings);
-            };
+							self.current_screen(ctx, _frame);
+						};
+						if ui.button("Selziona schermo").clicked(){
+							self.select_screen(ctx, _frame);
+						};
+						if ui.button("Tutti gli schermi").clicked(){
+							self.all_screens(ctx, _frame);
+						};
+						if ui.button("Regione rettangolare").clicked(){
+							self.portion(ctx, _frame);
+						};
+						if ui.button("Impostazioni").clicked(){
+							self.set_win_type(Settings);
+						};
 					});
 			});
 	}
