@@ -1,8 +1,8 @@
 use eframe::emath::Rect;
 use eframe::epaint::Rgba;
 use eframe::Theme;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue};
-use egui::color_picker::{Alpha, color_edit_button_rgba};
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue, Area};
+use egui::color_picker::{Alpha, color_edit_button_hsva, color_edit_button_rgba};
 use egui_extras::RetainedImage;
 use log::info;
 use crate::window::Content;
@@ -93,6 +93,10 @@ impl Content{
             "undo",
             include_bytes!("../images/undo_black.svg"),
             egui_extras::image::FitTo::Original).unwrap();
+        let mut delete_all_icon = RetainedImage::from_svg_bytes_with_size(
+            "delete_all",
+            include_bytes!("../images/delete_all_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
         
         let icon_size = Vec2::new(16.0,16.0);
         
@@ -124,6 +128,10 @@ impl Content{
             undo_icon = RetainedImage::from_svg_bytes_with_size(
                 "undo",
                 include_bytes!("../images/undo_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            delete_all_icon = RetainedImage::from_svg_bytes_with_size(
+                "delete_all",
+                include_bytes!("../images/delete_all_white.svg"),
                 egui_extras::image::FitTo::Original).unwrap();
         }
 
@@ -210,14 +218,15 @@ impl Content{
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui|{
                         ui.label("Colore");
                         let color_picker = color_edit_button_rgba(ui, &mut color, Alpha::BlendOrAdditive);
-                        if color_picker.changed() {
-                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color"), color));
-                        }
-                        if color_picker.has_focus(){
+                        
+                        if ctx.memory(|mem| mem.any_popup_open()) {
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color_picker_open"), true));
                         }
                         else {
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color_picker_open"), false));
+                        }
+                        if color_picker.changed() {
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color"), color));
                         }
                     });
 
@@ -239,7 +248,12 @@ impl Content{
                         drawings.pop();
                         ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
                     };
-                   
+                    
+                    if Button::image_and_text(delete_all_icon.texture_id(ctx), icon_size, "Cancella").ui(ui).clicked(){
+                        drawings.clear();
+                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
+                    };
+                    
                 });
             });
         CentralPanel::default()
@@ -306,7 +320,7 @@ impl Content{
                             Some(r) => r,
                             None => rect
                         };
-                        if hover_rect.contains(mouse_pos){
+                        if hover_rect.contains(mouse_pos) && !color_picker_open{
                             if ctx.input(|i| i.pointer.primary_down()){
                                 let mut init_pos = match ctx.memory(|mem| mem.data.get_temp(Id::from("init_pos"))){
                                     Some(p) => p,
