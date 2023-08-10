@@ -1,8 +1,5 @@
-use std::clone;
 use eframe::emath::Rect;
 use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2};
-use egui::Key::P;
-use egui::WidgetType::ImageButton;
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::windows::drawing_window::Drawing::{Arrow, Circle, Line, Rectangle};
@@ -26,14 +23,13 @@ enum DrawingMode {
 
 impl Content{
 	pub fn drawing_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-        let monitor_size = _frame.info().window_info.monitor_size.unwrap();
         let bg_color = ctx.style().visuals.panel_fill;
         let mut drawings = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawing>>(Id::from("drawings"))){
             Some(d) => d.clone(),
             None => Vec::<Drawing>::new(),
         };
         
-        let mut drawing_mode = match ctx.memory(|mem| mem.data.get_temp::<DrawingMode>(Id::from("drawing_mode"))){
+        let drawing_mode = match ctx.memory(|mem| mem.data.get_temp::<DrawingMode>(Id::from("drawing_mode"))){
             Some(d) => d,
             None => DrawingMode::Line,
         };
@@ -61,7 +57,7 @@ impl Content{
         
         let r_image = match self.get_colorimage(){
             Some(r) => {
-                RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap())
+                RetainedImage::from_color_image("screenshot", r)
             }
             None => {
                 ctx.memory(|mem|{
@@ -156,13 +152,12 @@ impl Content{
                         Arrow {p, v, s} => {
                             painter.arrow(p, v, s);
                         }
-                        _ => {}
                     }
                 }
         
                 match ctx.input(|i| i.pointer.hover_pos()){
                     Some(mut mouse_pos) => {
-                        let mut hover_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("hover_rect"))){
+                        let hover_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("hover_rect"))){
                             Some(r) => r,
                             None => rect
                         };
