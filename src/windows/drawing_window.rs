@@ -1,7 +1,10 @@
 use eframe::emath::Rect;
+use eframe::epaint::Rgba;
 use eframe::Theme;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, Button, Widget, hex_color};
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue};
+use egui::color_picker::{Alpha, color_edit_button_rgba};
 use egui_extras::RetainedImage;
+use log::info;
 use crate::window::Content;
 use crate::windows::drawing_window::Drawing::{Arrow, Circle, Free, Line, Rectangle};
 
@@ -44,9 +47,22 @@ impl Content{
             None => false,
         };
         
-        //TODO: REMOVE THIS
-        let color = Color32::RED;
-        let stroke = Stroke::new(1.0, color);
+        let mut color = match ctx.memory(|mem| mem.data.get_temp::<Rgba>(Id::from("color"))){
+            Some(c) => c,
+            None => Rgba::from(Color32::RED)
+        };
+
+        let mut thickness = match ctx.memory(|mem| mem.data.get_temp::<f32>(Id::from("thickness"))){
+            Some(t) => t,
+            None => 1.0
+        };
+        
+        let color_picker_open = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("color_picker_open"))){
+            Some(c) => c,
+            None => false
+        };
+        
+        let stroke = Stroke::new(thickness, color);
         
         
         let mut draw_icon = RetainedImage::from_svg_bytes_with_size(
@@ -72,6 +88,10 @@ impl Content{
         let mut arrow_icon = RetainedImage::from_svg_bytes_with_size(
             "arrow",
             include_bytes!("../images/arrow_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut undo_icon = RetainedImage::from_svg_bytes_with_size(
+            "undo",
+            include_bytes!("../images/undo_black.svg"),
             egui_extras::image::FitTo::Original).unwrap();
         
         let icon_size = Vec2::new(16.0,16.0);
@@ -101,9 +121,13 @@ impl Content{
                 "arrow",
                 include_bytes!("../images/arrow_white.svg"),
                 egui_extras::image::FitTo::Original).unwrap();
+            undo_icon = RetainedImage::from_svg_bytes_with_size(
+                "undo",
+                include_bytes!("../images/undo_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
         }
 
-        // _frame.set_maximized(true);
+        _frame.set_maximized(true);
         
         let r_image = match self.get_colorimage(){
             Some(r) => {
@@ -182,6 +206,39 @@ impl Content{
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("fill"), !fill));
                         };
                     }
+                    
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui|{
+                        ui.label("Colore");
+                        let color_picker = color_edit_button_rgba(ui, &mut color, Alpha::BlendOrAdditive);
+                        if color_picker.changed() {
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color"), color));
+                        }
+                        if color_picker.has_focus(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color_picker_open"), true));
+                        }
+                        else {
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("color_picker_open"), false));
+                        }
+                    });
+
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui|{
+                        ui.label("Spessore");
+                        if DragValue::new(&mut thickness)
+                            .speed(0.1)
+                            .clamp_range(1.0..=10.0)
+                            .ui(ui)
+                            .changed()
+                        {
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("thickness"), thickness));
+                        }
+                    });
+                    
+                    ui.add_space(20.0);
+                    
+                    if Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla").ui(ui).clicked(){
+                        drawings.pop();
+                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
+                    };
                    
                 });
             });
@@ -357,7 +414,7 @@ impl Content{
                                 };
                                 
                                 match drawing_mode {
-                                    DrawingMode::Line => { drawings.push(Line {p1: init_pos, p2: mouse_pos, s: Stroke::new(1.0, Color32::RED)}); }
+                                    DrawingMode::Line => { drawings.push(Line {p1: init_pos, p2: mouse_pos, s: stroke}); }
                                     DrawingMode::Rectangle => {
                                         if mouse_pos.x < init_pos.x {
                                             let tmp = mouse_pos.x;
@@ -386,7 +443,7 @@ impl Content{
                                         let radius = (mouse_pos.x - init_pos.x) / 2.0;
                                         drawings.push(Circle {c: center, r: radius, f: fill, s: stroke})
                                     }
-                                    DrawingMode::Arrow => { drawings.push(Arrow {p: init_pos, v: Vec2::new(mouse_pos.x - init_pos.x, mouse_pos.y - init_pos.y), s: Stroke::new(1.0, Color32::RED)}); }
+                                    DrawingMode::Arrow => { drawings.push(Arrow {p: init_pos, v: Vec2::new(mouse_pos.x - init_pos.x, mouse_pos.y - init_pos.y), s: stroke}); }
                                     DrawingMode::Free => {
                                         match drawings.last_mut().unwrap(){
                                             Free {points, s, complete} => {
