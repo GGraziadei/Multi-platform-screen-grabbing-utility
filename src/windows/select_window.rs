@@ -74,6 +74,23 @@ impl Content{
                     let handle_bm_pos = pos2(init_pos.x + (reg_width/2.0), final_pos.y);
                     let handle_br_pos = final_pos;
                     
+                    println!("{:?}", r);
+                    
+                    if init_pos.x < 0.0 {
+                        init_pos.x = 0.0;
+                    }
+                    if init_pos.y < 0.0 {
+                        init_pos.y = 0.0;
+                    }
+                    if final_pos.x > window_size.x {
+                        final_pos.x = window_size.x;
+                    }
+                    if final_pos.y > window_size.y {
+                        final_pos.y = window_size.y;
+                    }
+                    
+                    ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("region"), Rect::from_min_max(init_pos, final_pos)));
+                    
                     let mut handle_tl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tl_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_tl_pos, Vec2::splat(10.0))
