@@ -46,7 +46,7 @@ impl Display for AcquireMode{
     }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone,PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
 pub enum ImageFmt{
     PNG,
     JPG,
@@ -278,13 +278,12 @@ impl Configuration{
        Some((self.app_name).clone())
     }
 
-    /*
     pub fn set_app_name(&mut self , app_name : String) -> Option<bool>
     {
         self.app_name = app_name;
         self.write()?;
         Some(true)
-    }*/
+    }
 
     pub fn get_save_path(&self) -> Option<String>
     {
@@ -341,13 +340,12 @@ impl Configuration{
         self.delay.clone()
     }
 
-    /*
     pub fn set_delay(&mut self, delay : Option<Duration> ) -> Option<bool>
     {
         self.delay = delay;
         self.write()?;
         Some(true)
-    }*/
+    }
 
     pub fn get_hot_key_map(&self) -> Option<HashMap<AcquireMode, KeyCombo>>
     {

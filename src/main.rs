@@ -1,12 +1,3 @@
-use crate::thread_manager::ThreadManager;
-
-mod thread_manager;
-mod gui;
-mod configuration;
-mod image_formatter;
-mod screenshots;
-mod window;
-mod image_combiner;
-mod windows;
+use mpsg::thread_manager::ThreadManager;
 
 fn main() { ThreadManager::new().join(); }

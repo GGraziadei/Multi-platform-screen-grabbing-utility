@@ -8,10 +8,10 @@ use screenshots::{DisplayInfo, Image, Screen};
 use crate::configuration::Configuration;
 
 pub struct CaptureArea{
-    x : i32,
-    y: i32,
-    width: u32,
-    height: u32
+    pub x : i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32
 }
 
 struct PrintData{

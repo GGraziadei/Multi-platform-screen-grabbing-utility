@@ -615,12 +615,6 @@ fn toggle_ui_compact(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
 }
 
 // A wrapper that allows the more idiomatic usage pattern: `ui.add(toggle(&mut my_bool))`
-/// iOS-style toggle switch.
-///
-/// ## Example:
-/// ``` ignore
-/// ui.add(toggle(&mut my_bool));
-/// ```
 pub fn toggle(on: &mut bool) -> impl egui::Widget + '_ {
     move |ui: &mut egui::Ui| toggle_ui(ui, on)
 }
