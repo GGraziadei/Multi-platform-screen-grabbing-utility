@@ -3,7 +3,7 @@ use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layou
 use egui_extras::RetainedImage;
 use crate::configuration::AcquireAction;
 use crate::window::Content;
-use crate::window::WindowType::Settings;
+use crate::window::WindowType::{Drawing, Settings};
 
 impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -161,7 +161,9 @@ impl Content {
 							Button::image_and_text(
 								edit_icon.texture_id(ctx),
 								icon_size,
-								"Annota")).clicked(){}
+								"Annota")).clicked(){
+							self.set_win_type(Drawing);
+						}
 					}
 				);
 			});

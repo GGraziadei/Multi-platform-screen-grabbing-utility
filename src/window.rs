@@ -18,7 +18,8 @@ pub enum WindowType {
     Settings,
     Preview,
     Portion,
-    SelectScreen
+    SelectScreen,
+    Drawing
 }
 
 pub struct Content {
@@ -45,7 +46,7 @@ impl Content {
     }
 
     pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-        match self.get_current_screen_di(_frame) {
+        match self.get_current_screen_di() {
             None => { error!("DisplayInfo not found"); }
             Some(di) => {
                 match self.get_se().screenshot(di,  None) {
@@ -99,7 +100,7 @@ impl Content {
     }
 
     pub fn portion(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-        let di = self.get_current_screen_di(_frame);
+        let di = self.get_current_screen_di();
         if di.is_some(){
             match self.get_se().screenshot(di.unwrap(),None) {
                 Ok(screenshot) => {
@@ -157,7 +158,7 @@ impl Content {
         }
     }
 
-    pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
+    pub fn get_current_screen_di(&mut self) -> Option<DisplayInfo> {
         match Mouse::get_mouse_position() {
             Mouse::Position { mut x, mut y } => {
                 for display in DisplayInfo::all().unwrap(){
@@ -288,6 +289,7 @@ impl eframe::App for Content {
             Preview => self.screenshot_window(ctx, _frame),
             Portion => self.select_window(ctx, _frame),
             SelectScreen => self.select_screen_window(ctx, _frame),
+            Drawing => self.drawing_window(ctx, _frame),
         }
     }
 
