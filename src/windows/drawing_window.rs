@@ -1,18 +1,20 @@
 use eframe::emath::Rect;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2};
+use eframe::Theme;
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color};
 use egui_extras::RetainedImage;
 use crate::window::Content;
-use crate::windows::drawing_window::Drawing::{Arrow, Circle, Line, Rectangle};
+use crate::windows::drawing_window::Drawing::{Arrow, Circle, Free, Line, Rectangle};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum Drawing {
     Rectangle { r: Rect, s: Stroke, f: bool },
     Circle { c: Pos2, r: f32, s: Stroke, f: bool },
     Line { p1: Pos2, p2: Pos2, s: Stroke },
     Arrow { p: Pos2, v: Vec2, s: Stroke },
+    Free { points: Vec<Pos2>, s: Stroke, complete: bool },
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 enum DrawingMode {
     Line,
     Rectangle,
@@ -23,7 +25,10 @@ enum DrawingMode {
 
 impl Content{
 	pub fn drawing_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+        let monitor_size = _frame.info().window_info.monitor_size.unwrap();
         let bg_color = ctx.style().visuals.panel_fill;
+        let green = hex_color!("#16A085");
+        let border_color = ctx.style().visuals.widgets.inactive.bg_stroke.color;
         let mut drawings = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawing>>(Id::from("drawings"))){
             Some(d) => d.clone(),
             None => Vec::<Drawing>::new(),
@@ -31,7 +36,7 @@ impl Content{
         
         let drawing_mode = match ctx.memory(|mem| mem.data.get_temp::<DrawingMode>(Id::from("drawing_mode"))){
             Some(d) => d,
-            None => DrawingMode::Line,
+            None => DrawingMode::Free,
         };
 
         let fill = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("fill"))){
@@ -44,16 +49,61 @@ impl Content{
         let stroke = Stroke::new(1.0, color);
         
         
-        // _frame.set_window_size(monitor_size);
-        // match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("first_moved"))){
-        //     Some(_) => {}
-        //     None => {
-        //         _frame.set_window_pos(pos2(0.0, 0.0));
-        //         ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("first_moved"), true));
-        //     }
-        // };
+        let mut draw_icon = RetainedImage::from_svg_bytes_with_size(
+            "draw",
+            include_bytes!("../images/draw_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut line_icon = RetainedImage::from_svg_bytes_with_size(
+            "line",
+            include_bytes!("../images/line_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut rectangle_icon = RetainedImage::from_svg_bytes_with_size(
+            "rectangle",
+            include_bytes!("../images/rectangle_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut rectangle_fill_icon = RetainedImage::from_svg_bytes_with_size(
+            "rectangle_fill",
+            include_bytes!("../images/rectangle_fill_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut circle_icon = RetainedImage::from_svg_bytes_with_size(
+            "circle",
+            include_bytes!("../images/circle_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut arrow_icon = RetainedImage::from_svg_bytes_with_size(
+            "arrow",
+            include_bytes!("../images/arrow_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
         
-        _frame.set_maximized(true);
+        let icon_size = Vec2::new(16.0,16.0);
+        
+        if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark {
+            draw_icon = RetainedImage::from_svg_bytes_with_size(
+                "draw",
+                include_bytes!("../images/draw_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            line_icon = RetainedImage::from_svg_bytes_with_size(
+                "line",
+                include_bytes!("../images/line_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            rectangle_icon = RetainedImage::from_svg_bytes_with_size(
+                "rectangle",
+                include_bytes!("../images/rectangle_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            rectangle_fill_icon = RetainedImage::from_svg_bytes_with_size(
+                "rectangle_fill",
+                include_bytes!("../images/rectangle_fill_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            circle_icon = RetainedImage::from_svg_bytes_with_size(
+                "circle",
+                include_bytes!("../images/circle_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            arrow_icon = RetainedImage::from_svg_bytes_with_size(
+                "arrow",
+                include_bytes!("../images/arrow_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+        }
+
+        // _frame.set_maximized(true);
         
         let r_image = match self.get_colorimage(){
             Some(r) => {
@@ -73,31 +123,64 @@ impl Content{
             .frame(Frame{inner_margin: Margin::same(10.0), fill: bg_color, ..Default::default()})
             .show(ctx, |ui|{
                 ui.with_layout(Layout::left_to_right(Align::LEFT), |ui|{
-                    ui.spacing_mut().button_padding = Vec2::splat(10.0) ;
-                    if ui.button("Libero").clicked(){
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Free));
-                    };
-                    if ui.button("Linea").clicked(){
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Line));
-                    };
-                    if ui.button("Rettangolo").clicked(){
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Rectangle));
-                    };
-                    if ui.button("Cerchio").clicked(){
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Circle));
-                    };
-                    if ui.button("Freccia").clicked(){
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Arrow));
-                    };
+                    ui.spacing_mut().button_padding = Vec2::splat(10.0);
+                    
+                    if Button::image_and_text(draw_icon.texture_id(ctx), icon_size, "Libero")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Free => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Free));
+                        };
+                    if Button::image_and_text(line_icon.texture_id(ctx), icon_size, "Linea")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Line => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Line));
+                        };
+                    
+                    if Button::image_and_text(rectangle_icon.texture_id(ctx), icon_size, "Rettangolo")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Rectangle => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Rectangle));
+                        };
+                    if Button::image_and_text(circle_icon.texture_id(ctx), icon_size, "Cerchio")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Circle => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Circle));
+                        };
+                    if Button::image_and_text(arrow_icon.texture_id(ctx), icon_size, "Freccia")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Arrow => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Arrow));
+                        };
+                    ui.add_space(20.0);
                     if fill {
-                        if ui.button("Pieno").clicked(){
+                        if Button::image_and_text(rectangle_fill_icon.texture_id(ctx), icon_size, "Pieno").ui(ui).clicked(){
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("fill"), !fill));
-                        }
+                        };
                     }
                     else {
-                        if ui.button("Vuoto").clicked(){
+                        if Button::image_and_text(rectangle_icon.texture_id(ctx), icon_size, "Vuoto").ui(ui).clicked(){
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("fill"), !fill));
-                        }
+                        };
                     }
                    
                 });
@@ -129,7 +212,7 @@ impl Content{
         
                 painter.set_clip_rect(rect);
                 painter.image(r_image.texture_id(ctx), rect, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
-        
+                
                 for d in drawings.iter() {
                     match d.clone(){
                         Line {p1, p2, s} => {
@@ -151,6 +234,11 @@ impl Content{
                         },
                         Arrow {p, v, s} => {
                             painter.arrow(p, v, s);
+                        },
+                        Free {points, s, complete} => {
+                            for i in 1..points.len() {
+                                painter.line_segment([points[i-1], points[i]], s);
+                            }
                         }
                     }
                 }
@@ -217,8 +305,38 @@ impl Content{
                                             Some(p) => p,
                                             None => init_pos
                                         };
-                                        painter.line_segment([prev_pos, mouse_pos], stroke);
-                                        drawings.push(Line {p1: prev_pos, p2: mouse_pos, s: stroke});
+                                        match drawings.last() {
+                                            Some(d) => {
+                                                match d.clone() {
+                                                    Free {points, s, complete} => {
+                                                        if !complete {
+                                                            let mut points = points.clone();
+                                                            drawings.pop();
+                                                            points.push(mouse_pos);
+                                                            drawings.push(Free {points, s: stroke, complete: false});
+                                                        }
+                                                        else {
+                                                            let mut points = Vec::new();
+                                                            points.push(prev_pos);
+                                                            points.push(mouse_pos);
+                                                            drawings.push(Free {points, s: stroke, complete: false});
+                                                        }
+                                                    },
+                                                    _ => {
+                                                        let mut points = Vec::new();
+                                                        points.push(prev_pos);
+                                                        points.push(mouse_pos);
+                                                        drawings.push(Free {points, s: stroke, complete: false});
+                                                    }
+                                                };
+                                            },
+                                            None => {
+                                                let mut points = Vec::new();
+                                                points.push(prev_pos);
+                                                points.push(mouse_pos);
+                                                drawings.push(Free {points, s: stroke, complete: false});
+                                            }
+                                        };
                                         ctx.memory_mut(|mem| {
                                             mem.data.insert_temp(Id::from("prev_pos"), mouse_pos);
                                             mem.data.insert_temp(Id::from("drawings"), drawings.clone());
@@ -270,6 +388,13 @@ impl Content{
                                     }
                                     DrawingMode::Arrow => { drawings.push(Arrow {p: init_pos, v: Vec2::new(mouse_pos.x - init_pos.x, mouse_pos.y - init_pos.y), s: Stroke::new(1.0, Color32::RED)}); }
                                     DrawingMode::Free => {
+                                        match drawings.last_mut().unwrap(){
+                                            Free {points, s, complete} => {
+                                                points.push(mouse_pos);
+                                                *complete = true;
+                                            },
+                                            _ => {}
+                                        }
                                         ctx.memory_mut(|mem| mem.data.remove::<Pos2>(Id::from("prev_pos")));
                                     }
                                 }
