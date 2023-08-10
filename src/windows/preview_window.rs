@@ -1,6 +1,7 @@
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
+use crate::configuration::AcquireAction;
 use crate::window::Content;
 use crate::window::WindowType::Settings;
 
@@ -48,6 +49,31 @@ impl Content {
 				}
 			});
 		}
+		let aa_done = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("aa_done"))){
+			Some(a) => a,
+			None => false
+		};
+		
+		if !aa_done {
+			let config = self.configuration.read().unwrap();
+			let aa = config.get_when_capture();
+			drop(config);
+			
+			
+			match aa {
+				Some(a) => {
+					if a.save_file{
+						self.save_image(ctx, None);
+					}
+					if a.copy_file{
+						self.copy_image(ctx);
+					}
+					ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("aa_done"), true));
+				}
+				None => {}
+			}
+		}
+		
 		
 		TopBottomPanel::top("top")
 			.frame(Frame{fill: bg_color, inner_margin: Margin::same(margin), ..Default::default()})
@@ -192,18 +218,23 @@ impl Content {
 						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 						if ui.button("Schermo attuale").clicked(){
 							self.current_screen(ctx, _frame);
+							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 						};
 						if ui.button("Selziona schermo").clicked(){
 							self.select_screen(ctx, _frame);
+							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 						};
 						if ui.button("Tutti gli schermi").clicked(){
 							self.all_screens(ctx, _frame);
+							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 						};
 						if ui.button("Regione rettangolare").clicked(){
 							self.portion(ctx, _frame);
+							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 						};
 						if ui.button("Impostazioni").clicked(){
 							self.set_win_type(Settings);
+							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 						};
 					});
 			});
