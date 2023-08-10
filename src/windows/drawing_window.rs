@@ -1,20 +1,24 @@
 use eframe::emath::Rect;
 use eframe::epaint::Rgba;
 use eframe::Theme;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue, Area};
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue, Area, TextStyle, Align2, FontId, FontFamily, RichText};
 use egui::color_picker::{Alpha, color_edit_button_hsva, color_edit_button_rgba};
+use egui::ecolor::Hsva;
+use egui::plot::{PlotPoint, Text};
 use egui_extras::RetainedImage;
 use log::info;
 use crate::window::Content;
-use crate::windows::drawing_window::Drawing::{Arrow, Circle, Free, Line, Rectangle};
+use crate::window::WindowType::Preview;
+use crate::windows::drawing_window::Drawings::{Arrow, Circle, Free, Line, Numbers, Rectangle};
 
 #[derive(Clone, Debug, PartialEq)]
-enum Drawing {
+pub enum Drawings {
+    Line { p1: Pos2, p2: Pos2, s: Stroke },
     Rectangle { r: Rect, s: Stroke, f: bool },
     Circle { c: Pos2, r: f32, s: Stroke, f: bool },
-    Line { p1: Pos2, p2: Pos2, s: Stroke },
     Arrow { p: Pos2, v: Vec2, s: Stroke },
     Free { points: Vec<Pos2>, s: Stroke, complete: bool },
+    Numbers { p: Pos2,  n: u32, c: Rgba }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
@@ -23,7 +27,8 @@ enum DrawingMode {
     Rectangle,
     Circle,
     Arrow,
-    Free
+    Free,
+    Numbers
 }
 
 impl Content{
@@ -32,9 +37,9 @@ impl Content{
         let bg_color = ctx.style().visuals.panel_fill;
         let green = hex_color!("#16A085");
         let border_color = ctx.style().visuals.widgets.inactive.bg_stroke.color;
-        let mut drawings = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawing>>(Id::from("drawings"))){
+        let mut drawings = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawings>>(Id::from("drawings"))){
             Some(d) => d.clone(),
-            None => Vec::<Drawing>::new(),
+            None => Vec::<Drawings>::new(),
         };
         
         let drawing_mode = match ctx.memory(|mem| mem.data.get_temp::<DrawingMode>(Id::from("drawing_mode"))){
@@ -60,6 +65,11 @@ impl Content{
         let color_picker_open = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("color_picker_open"))){
             Some(c) => c,
             None => false
+        };
+        
+        let circle_number = match ctx.memory(|mem| mem.data.get_temp::<u32>(Id::from("circle_number"))){
+            Some(n) => n,
+            None => 1
         };
         
         let stroke = Stroke::new(thickness, color);
@@ -97,8 +107,20 @@ impl Content{
             "delete_all",
             include_bytes!("../images/delete_all_black.svg"),
             egui_extras::image::FitTo::Original).unwrap();
+        let mut save_icon = RetainedImage::from_svg_bytes_with_size(
+            "save",
+            include_bytes!("../images/save_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut close_icon = RetainedImage::from_svg_bytes_with_size(
+            "close",
+            include_bytes!("../images/close_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
+        let mut counter_icon = RetainedImage::from_svg_bytes_with_size(
+            "counter",
+            include_bytes!("../images/counter_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
         
-        let icon_size = Vec2::new(16.0,16.0);
+        let icon_size = Vec2::splat(16.0);
         
         if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark {
             draw_icon = RetainedImage::from_svg_bytes_with_size(
@@ -133,6 +155,18 @@ impl Content{
                 "delete_all",
                 include_bytes!("../images/delete_all_white.svg"),
                 egui_extras::image::FitTo::Original).unwrap();
+            save_icon = RetainedImage::from_svg_bytes_with_size(
+                "save",
+                include_bytes!("../images/save_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            close_icon = RetainedImage::from_svg_bytes_with_size(
+                "close",
+                include_bytes!("../images/close_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            counter_icon = RetainedImage::from_svg_bytes_with_size(
+                "counter",
+                include_bytes!("../images/counter_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
         }
 
         _frame.set_maximized(true);
@@ -153,6 +187,8 @@ impl Content{
 		};
         TopBottomPanel::top("toolbar")
             .frame(Frame{inner_margin: Margin::same(10.0), fill: bg_color, ..Default::default()})
+            .resizable(false)
+            .show_separator_line(false)
             .show(ctx, |ui|{
                 ui.with_layout(Layout::left_to_right(Align::LEFT), |ui|{
                     ui.spacing_mut().button_padding = Vec2::splat(10.0);
@@ -202,6 +238,15 @@ impl Content{
                         }))
                         .ui(ui).clicked(){
                             ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Arrow));
+                        };
+                    if Button::image_and_text(counter_icon.texture_id(ctx), icon_size, "Numeri")
+                        .stroke(Stroke::new(1.0,
+                        match drawing_mode{
+                            DrawingMode::Numbers => green,
+                            _ => border_color
+                        }))
+                        .ui(ui).clicked(){
+                            ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawing_mode"), DrawingMode::Numbers));
                         };
                     ui.add_space(20.0);
                     if fill {
@@ -254,6 +299,28 @@ impl Content{
                         ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
                     };
                     
+                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui|{
+                        if Button::image_and_text(save_icon.texture_id(ctx), icon_size, "Salva").ui(ui).clicked(){
+                            let rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("rect"))){
+                                Some(rect) => rect,
+                                None => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0))
+                            };
+                            
+                            ctx.memory_mut(|mem|{
+                                mem.data.remove::<DrawingMode>(Id::from("drawing_mode"));
+                                mem.data.remove::<Rgba>(Id::from("color"));
+                                mem.data.remove::<f32>(Id::from("thickness"));
+                                mem.data.remove::<bool>(Id::from("fill"));
+                            });
+                            self.set_region(rect);
+                            _frame.request_screenshot();
+                        };
+                        if Button::image_and_text(close_icon.texture_id(ctx), icon_size, "Esci").ui(ui).clicked(){
+                           self.set_win_type(Preview);
+                        }
+                        
+                    });
+                    
                 });
             });
         CentralPanel::default()
@@ -280,6 +347,8 @@ impl Content{
                 }
                 rect.set_width(width);
                 rect.set_height(height);
+                
+                ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("rect"), rect));
         
                 painter.set_clip_rect(rect);
                 painter.image(r_image.texture_id(ctx), rect, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
@@ -310,6 +379,17 @@ impl Content{
                             for i in 1..points.len() {
                                 painter.line_segment([points[i-1], points[i]], s);
                             }
+                        },
+                        Numbers{ p, n, c} => {
+                            painter.circle_filled(p, 20.0, c);
+                            
+                            let diff = 3.0 - c.r() - c.g() - c.b();
+                            let text_color = match diff {
+                                d if d >= 2.0 => Color32::WHITE,
+                                _ => Color32::BLACK
+                            };
+                            
+                            painter.text(p, Align2::CENTER_CENTER, format!("{}", n), FontId::new(20.0, FontFamily::default()), text_color);
                         }
                     }
                 }
@@ -321,6 +401,21 @@ impl Content{
                             None => rect
                         };
                         if hover_rect.contains(mouse_pos) && !color_picker_open{
+                            
+                            if ctx.input(|i| i.pointer.primary_clicked()){
+                                println!("clicked");
+                                match drawing_mode {
+                                    DrawingMode::Numbers => {
+                                        drawings.push(Numbers {p: mouse_pos, n: circle_number, c: color});
+                                        ctx.memory_mut(|mem| {
+                                            mem.data.insert_temp(Id::from("circle_number"), circle_number + 1);
+                                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                                        });
+                                    },
+                                    _ => {}
+                                }
+                            }
+                            
                             if ctx.input(|i| i.pointer.primary_down()){
                                 let mut init_pos = match ctx.memory(|mem| mem.data.get_temp(Id::from("init_pos"))){
                                     Some(p) => p,
@@ -331,7 +426,6 @@ impl Content{
                                     }
                                 };
                                 
-        
                                 match drawing_mode {
                                     DrawingMode::Line => { painter.line_segment([init_pos, mouse_pos], stroke); }
                                     DrawingMode::Rectangle => {
@@ -414,6 +508,7 @@ impl Content{
                                             
                                         });
                                     }
+                                    _ => {}
                                 }
                                 ctx.memory_mut(|mem| {
                                     mem.data.insert_temp(Id::from("mouse_pos"), mouse_pos);
@@ -421,6 +516,7 @@ impl Content{
                                     mem.data.insert_temp(Id::from("hover_rect"), Rect::from_min_size(pos2(0.0,0.0), frame_size));
                                 });
                             }
+                            
                             if ctx.input(|i| i.pointer.primary_released()){
                                 let mut init_pos = match ctx.memory(|mem| mem.data.get_temp::<Pos2>(Id::from("init_pos"))){
                                     Some(p) => p,
@@ -468,6 +564,7 @@ impl Content{
                                         }
                                         ctx.memory_mut(|mem| mem.data.remove::<Pos2>(Id::from("prev_pos")));
                                     }
+                                    _ => {}
                                 }
         
                                 ctx.memory_mut(|mem| {

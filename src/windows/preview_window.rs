@@ -3,6 +3,7 @@ use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layou
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::window::WindowType::{Drawing, Settings};
+use crate::windows::drawing_window::Drawings;
 
 impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -10,27 +11,16 @@ impl Content {
 		let bg_color = ctx.style().visuals.panel_fill;
 		let w = 0.6;
 		let margin = 20.0;
-		// let mut first_render = true;
 		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
 		let mut screenshot_ok = false;
 
 		_frame.set_window_size(Vec2::new(1000.0, 600.0));
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
+		_frame.set_maximized(false);
 
-		// ctx.memory(|mem|{
-		// 	let res = mem.data.get_temp::<bool>(Id::from("first_render"));
-		// 	if res.is_some() {
-		// 		first_render = res.unwrap();
-		// 	}
-		// });
-		//
-		// if first_render {
-		// 	_frame.set_centered();
-		// 	ctx.memory_mut(|mem| {
-		// 		mem.data.insert_temp(Id::from("first_render"), false);
-		// 	});
-		// }
+		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
+		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
 
 		if self.get_colorimage().is_some(){
 			r_image = RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap());
