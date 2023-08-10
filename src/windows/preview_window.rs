@@ -10,7 +10,7 @@ impl Content {
 		let bg_color = ctx.style().visuals.panel_fill;
 		let w = 0.6;
 		let margin = 20.0;
-		let mut first_render = true;
+		// let mut first_render = true;
 		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
 		let mut screenshot_ok = false;
 
@@ -18,19 +18,19 @@ impl Content {
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
 
-		ctx.memory(|mem|{
-			let res = mem.data.get_temp::<bool>(Id::from("first_render"));
-			if res.is_some() {
-				first_render = res.unwrap();
-			}
-		});
-
-		if first_render {
-			_frame.set_centered();
-			ctx.memory_mut(|mem| {
-				mem.data.insert_temp(Id::from("first_render"), false);
-			});
-		}
+		// ctx.memory(|mem|{
+		// 	let res = mem.data.get_temp::<bool>(Id::from("first_render"));
+		// 	if res.is_some() {
+		// 		first_render = res.unwrap();
+		// 	}
+		// });
+		//
+		// if first_render {
+		// 	_frame.set_centered();
+		// 	ctx.memory_mut(|mem| {
+		// 		mem.data.insert_temp(Id::from("first_render"), false);
+		// 	});
+		// }
 
 		if self.get_colorimage().is_some(){
 			r_image = RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap());
