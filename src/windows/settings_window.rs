@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Duration;
 use eframe::Theme;
 use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
@@ -330,17 +331,21 @@ impl Content {
                                         })
                                     }
                                     let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_black.svg")).unwrap();
-                                    if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+                                    if _frame.info().system_theme.is_none() || _frame.info().system_theme == Some(Theme::Dark){
                                         icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/folder_white.svg")).unwrap();
                                     }
                                     let button_dim = text_edit.rect.height() - 8.0;
                                     if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
-                                        let new_path = match FileDialog::new().show_open_single_dir().unwrap(){
-                                            Some(path) => path.to_str().unwrap().to_string(),
-                                            None => path.clone(),
-                                        };
                                         ctx.memory_mut(|mem|{
-                                            mem.data.insert_temp(Id::from("path"), new_path.clone());
+                                            mem.data.insert_temp(Id::from("path"), match FileDialog::new().show_open_single_dir() {
+                                                Ok(p) => match p{
+                                                        Some(path) => path.to_str().unwrap().to_string(),
+                                                        None => path.clone(),
+                                                    }
+                                                Err(error) => {
+                                                    panic!("{}", error);
+                                                }
+                                            });
                                         });
                                     };
                                 });
@@ -448,7 +453,7 @@ impl Content {
                                             }
                                         }
                                         let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_black.svg")).unwrap();
-                                        if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark{
+                                        if _frame.info().system_theme.is_none() || _frame.info().system_theme == Some(Theme::Dark){
                                             icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_white.svg")).unwrap();
                                         }
                                         let button_dim = text_edit.rect.height() - 8.0;
@@ -475,31 +480,47 @@ impl Content {
                         ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 
 						if Button::new("Conferma").ui(ui).clicked(){
-                            let mut c = self.configuration.write().unwrap();
+
                             ctx.memory_mut(|mem| {
 								mem.data.clear();
 							});
                             if !save_region{
                                 region = None;
                             }
-                            c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                            Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
-                            drop(c);
+
+                            match self.configuration.write(){
+                                Ok(mut c) => {
+                                    c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
+                                           Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                                }
+                                Err(error) => {
+                                    panic!("{}", error);
+                                }
+                            }
+
 							self.set_win_type(Main);
 						}
 						if Button::new("Applica").ui(ui).clicked(){
-                            let mut c = self.configuration.write().unwrap();
+
                             ctx.memory_mut(|mem| {
-                                let tab = mem.data.get_temp::<Tab>(Id::from("tab")).unwrap();
 								mem.data.clear();
-                                mem.data.insert_temp(Id::from("tab"), tab.clone());
+                                if let Some(tab) = mem.data.get_temp::<Tab>(Id::from("tab")){
+                                    mem.data.insert_temp(Id::from("tab"), tab.clone());
+                                }
 							});
                             if !save_region{
                                 region = None;
                             }
-                            c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
-                                   Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
-                            drop(c);
+
+                            match self.configuration.write(){
+                                Ok(mut c) => {
+                                    c.bulk(None, Some(path.clone()), Some(filename_pattern.clone()), Some(format),
+                                           Some(save_region), Some(region), Some(delay), Some(when_acquire), Some(hot_key_map.clone()));
+                                }
+                                Err(error) => {
+                                    panic!("{}", error);
+                                }
+                            }
                         }
 						if Button::new("Annulla").ui(ui).clicked(){
 							ctx.memory_mut(|mem| {
