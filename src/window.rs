@@ -51,10 +51,11 @@ impl Content {
                 match self.get_se().screenshot(di,  None) {
                     Ok(screenshot) => {
                         let img_bytes = screenshot.rgba().clone();
-                        let img_bytes_fast = screenshot.to_png(None).unwrap();
                         ctx.memory_mut(|mem|{
                             mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-                            mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+                            if let Ok(img_bytes_fast) = screenshot.to_png(None){
+                                mem.data.insert_temp(Id::from("bytes"), img_bytes_fast);
+                            }
                             mem.data.insert_temp(Id::from("width"), screenshot.width());
                             mem.data.insert_temp(Id::from("height"), screenshot.height());
                         });
@@ -99,29 +100,30 @@ impl Content {
     }
 
     pub fn portion(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-        let di = self.get_current_screen_di(_frame);
-        if di.is_some(){
-            match self.get_se().screenshot(di.unwrap(),None) {
-                Ok(screenshot) => {
-                    let img_bytes = screenshot.rgba().clone();
-                    ctx.memory_mut(|mem|{
-                        mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-                        if let Ok(img_bytes_fast) = screenshot.to_png(None){
-                            mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
-                        }
-                        mem.data.insert_temp(Id::from("width"), screenshot.width());
-                        mem.data.insert_temp(Id::from("height"), screenshot.height());
-                        mem.data.insert_temp(Id::from("di"), di.unwrap());
-                    });
-                    self.set_win_type(Portion);
-                }
-                Err(error) => {
-                    error!("{}",error);
+        match self.get_current_screen_di(_frame){
+            None => {
+                error!("Error in selecting screen.");
+            }
+            Some(di) => {
+                match self.get_se().screenshot(di,None) {
+                    Ok(screenshot) => {
+                        let img_bytes = screenshot.rgba().clone();
+                        ctx.memory_mut(|mem|{
+                            mem.data.insert_temp(Id::from("screenshot"), img_bytes);
+                            if let Ok(img_bytes_fast) = screenshot.to_png(None){
+                                mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+                            }
+                            mem.data.insert_temp(Id::from("width"), screenshot.width());
+                            mem.data.insert_temp(Id::from("height"), screenshot.height());
+                            mem.data.insert_temp(Id::from("di"), di);
+                        });
+                        self.set_win_type(Portion);
+                    }
+                    Err(error) => {
+                        error!("{}",error);
+                    }
                 }
             }
-        }
-        else {
-            println!("Errore nella selezione dello schermo.");
         }
     }
 
@@ -144,10 +146,11 @@ impl Content {
             }
             Some(screenshot) => {
                 let img_bytes = screenshot.rgba().clone();
-                let img_bytes_fast = screenshot.to_png(None).unwrap();
                 ctx.memory_mut(|mem|{
                     mem.data.insert_temp(Id::from("screenshot"), img_bytes);
-                    mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+                    if let Ok(img_bytes_fast) = screenshot.to_png(None){
+                        mem.data.insert_temp(Id::from("bytes"), img_bytes_fast);
+                    }
                     mem.data.insert_temp(Id::from("width"), screenshot.width());
                     mem.data.insert_temp(Id::from("height"), screenshot.height());
                 });
@@ -160,7 +163,9 @@ impl Content {
     pub fn get_current_screen_di(&mut self, _frame: &mut eframe::Frame) -> Option<DisplayInfo> {
         match Mouse::get_mouse_position() {
             Mouse::Position { mut x, mut y } => {
-                for display in DisplayInfo::all().unwrap(){
+                for display in DisplayInfo::all()
+                    .expect("Error in screen list access")
+                {
                     let new_x = (x as f32/display.scale_factor) as i32;
                     let new_y = (y as f32/display.scale_factor) as i32;
                     if new_x > display.x && new_x < display.x + display.width as i32 && new_y > display.y && new_y < display.y + display.height as i32 {
@@ -180,52 +185,54 @@ impl Content {
         let path : String;
         let format : ImageFmt;
 
-        if custom_path.is_some(){
-            match custom_path.clone().unwrap().extension(){
-                Some(ext) => {
-                    match ext.to_str().unwrap() {
-                        "png" => format = ImageFmt::PNG,
-                        "jpg" => format = ImageFmt::JPG,
-                        "jpeg" => format = ImageFmt::JPG,
-                        "gif" => format = ImageFmt::GIF,
-                        _ => {
-                            error!("Format not supported.");
-                            return;
+        match custom_path {
+            None => {
+                let configuration_read = self.configuration.read().unwrap();
+                let file_name = configuration_read.get_filename().unwrap();
+                let save_path = configuration_read.get_save_path().unwrap();
+                format = configuration_read.get_image_fmt().unwrap();
+                drop(configuration_read);
+
+                path = Path::new(&save_path).join(format!("{}.{}",file_name,format)).to_str().unwrap().to_string();
+            },
+            Some(custom_path) => {
+                match custom_path.clone().extension(){
+                    Some(ext) => {
+                        match ext.to_str().unwrap() {
+                            "png" => format = ImageFmt::PNG,
+                            "jpg" => format = ImageFmt::JPG,
+                            "jpeg" => format = ImageFmt::JPG,
+                            "gif" => format = ImageFmt::GIF,
+                            _ => {
+                                error!("Format not supported.");
+                                return;
+                            }
                         }
                     }
+                    None => {
+                        error!("Format not supported.");
+                        return;
+                    }
                 }
-                None => {
-                    error!("Format not supported.");
-                    return;
-                }
+                path = custom_path.to_str().unwrap().to_string();
             }
-            path = custom_path.unwrap().to_str().unwrap().to_string();
-        }
-        else
-        {
-            let configuration_read = self.configuration.read().unwrap();
-            let file_name = configuration_read.get_filename().unwrap();
-            let save_path = configuration_read.get_save_path().unwrap();
-            format = configuration_read.get_image_fmt().unwrap();
-            drop(configuration_read);
-
-            path = Path::new(&save_path).join(format!("{}.{}",file_name,format)).to_str().unwrap().to_string();
         }
 
         let imgf = match self.get_colorimage(){
             Some(img) => ImageFormatter::from(img),
             None => {
-                let mut image = screenshots::Image::new(0,0,vec![]);
-                let imgf = ctx.memory(|mem|{
-                    let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-                    if image_bytes.is_some(){
-                        let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-                        let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-                        image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-                    }
-                    ImageFormatter::from(image)
-                });
-                imgf
+                ctx.memory(|mem|{
+                    ImageFormatter::from(match mem.data.get_temp::<Vec<u8>>(Id::from("screenshot")){
+                        None => {
+                            screenshots::Image::new(0,0,vec![])
+                        }
+                        Some(image_bytes) => {
+                            let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+                            let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+                            screenshots::Image::new(image_width, image_height, image_bytes.clone())
+                        }
+                    })
+                })
             }
         };
         let mut encoders = self.encoders.lock()
@@ -235,23 +242,25 @@ impl Content {
     }
 
     pub fn copy_image(&mut self, ctx: &Context) {
-        if self.get_colorimage().is_some(){
-            ImageFormatter::from(self.get_colorimage().unwrap()).to_clipboard()
-                .expect("Error in image processing. Panic Main thread.");
-        }
-        else {
-            let mut image = screenshots::Image::new(0,0,vec![]);
-            ctx.memory(|mem|{
-                let image_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("screenshot"));
-                if image_bytes.is_some(){
-                    let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
-                    let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
-                    image = screenshots::Image::new(image_width, image_height, image_bytes.clone().unwrap());
-                }
-                let imgf = ImageFormatter::from(image);
-                imgf.to_clipboard()
-                    .expect("Error in image processing. Panic on main thread.");
-            });
+        match self.get_colorimage(){
+            None => {
+                ctx.memory(|mem|{
+                    match mem.data.get_temp::<Vec<u8>>(Id::from("screenshot")){
+                        None => {}
+                        Some(image_bytes) => {
+                            let image_width = mem.data.get_temp::<u32>(Id::from("width")).unwrap().clone();
+                            let image_height = mem.data.get_temp::<u32>(Id::from("height")).unwrap().clone();
+                            ImageFormatter::from(screenshots::Image::new(image_width, image_height, image_bytes.clone()))
+                                .to_clipboard()
+                                .expect("Error in image processing. Panic on main thread.");
+                        }
+                    }
+                });
+            }
+            Some(color_image) => {
+                ImageFormatter::from(color_image).to_clipboard()
+                    .expect("Error in image processing. Panic Main thread.");
+            }
         }
     }
 
@@ -259,17 +268,27 @@ impl Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        let configuration_read = self.configuration.read().unwrap();
 
         let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
             Some(hkm) => hkm,
-            None => configuration_read.get_hot_key_map().unwrap()
+            None => match self.configuration.read(){
+                Ok(config) => {
+                    if let Some(hkm) = config.get_hot_key_map(){
+                        hkm
+                    }else{
+                        panic!("Configuration poisoned.");
+                    }
+                }
+                Err(error) => {
+                    /*Gui thread have to access to configuration file. If it is poisoned panic*/
+                    panic!("{}", error);
+                }
+            }
         };
-        drop(configuration_read);
 
         for (am, kc) in hkm {
-            if kc.k.is_some(){
-                let shortcut = KeyboardShortcut::new(kc.m, kc.k.unwrap());
+            if let Some(k) = kc.k {
+                let shortcut = KeyboardShortcut::new(kc.m, k);
                 let mut i = ctx.input(|i| i.clone() );
                 if i.consume_shortcut(&shortcut){
                     match am {
@@ -292,9 +311,10 @@ impl eframe::App for Content {
     }
 
     fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
-        if self.region.is_some(){
+        if let Some(mut region) = self.region {
             // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
-            let mut region = self.region.unwrap();
+            //let mut region = self.region.unwrap();
+
             let mut colorimage = match _frame.screenshot(){
                 None => {
                     notifica::notify("Error in screenshot acquisition.", "")
@@ -318,12 +338,20 @@ impl eframe::App for Content {
 }
 
 pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor){
-    let configuration_read = configuration.read()
-        .expect("Error. Cannot run gui thread without configuration file.");
 
-    let app_name_tmp = configuration_read.get_app_name().unwrap().clone();
-
-    drop(configuration_read);
+    let app_name = match configuration.read(){
+        Ok(config) => {
+            match config.get_app_name() {
+                None => {
+                    panic!("Configuration error: app name is required.")
+                }
+                Some(app_name) => {app_name}
+            }
+        }
+        Err(error) => {
+            panic!("{}" ,error)
+        }
+    };
 
     let options = eframe::NativeOptions{
         resizable: false,
@@ -343,7 +371,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     };
 
     run_native(
-        &*app_name_tmp,
+        &app_name,
         options,
         Box::new(move |_cc| Box::<Content>::new(content)),
     ).expect("Error during gui thread init.");

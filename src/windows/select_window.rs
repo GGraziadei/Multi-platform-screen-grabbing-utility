@@ -531,11 +531,11 @@ impl Content{
                             if init_pos.is_some() && curr_pos.is_some(){
                                 let region = Rect::from_min_max(init_pos.unwrap(), curr_pos.unwrap());
                                 self.set_region(region);
-                                let mut config = self.configuration.write().unwrap();
-                                if config.get_save_region() {
-                                    config.set_region(region);
+                                if let Ok(mut config) = self.configuration.write() {
+                                    if config.get_save_region() {
+                                        config.set_region(region);
+                                    }
                                 }
-                                drop(config);
                                 _frame.request_screenshot();
                             }
                         });
