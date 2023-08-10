@@ -74,8 +74,6 @@ impl Content{
                     let handle_bm_pos = pos2(init_pos.x + (reg_width/2.0), final_pos.y);
                     let handle_br_pos = final_pos;
                     
-                    println!("\n region: {:?}", r);
-                    
                     if init_pos.x < 0.0 {
                         init_pos.x = 0.0;
                     }

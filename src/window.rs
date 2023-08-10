@@ -356,7 +356,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     };
 
     let options = eframe::NativeOptions{
-        resizable: false,
+        // resizable: false,
         follow_system_theme: true,
         default_theme: Theme::Dark,
         // centered: true,
