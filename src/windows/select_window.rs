@@ -4,15 +4,15 @@ use egui_extras::RetainedImage;
 use crate::window::{Content, };
 
 impl Content{
-	pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-		
-		CentralPanel::default().show(ctx, |ui| {
-			let mut r_image = RetainedImage::from_color_image("", ColorImage::example());
-			let window_size: Vec2 = Vec2::new(_frame.info().window_info.size.x, _frame.info().window_info.size.y);
-			let mut screenshot_ok = false;
+    pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
+
+        CentralPanel::default().show(ctx, |ui| {
+            let mut r_image = RetainedImage::from_color_image("", ColorImage::example());
+            let window_size: Vec2 = _frame.info().window_info.monitor_size.unwrap();
+            let mut screenshot_ok = false;
             let config = self.configuration.read().unwrap();
             let green = hex_color!("#16A085");
-		
+
             let region = match config.get_save_region() {
                 true => {
                     match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("region"))){
@@ -39,25 +39,25 @@ impl Content{
                 }
             };
             
-		    drop(config);
-			
-			ctx.memory(|mem|{
-				let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-				if mem_image.is_some(){
-					r_image = RetainedImage::from_image_bytes("bytes", mem_image.unwrap().as_slice()).unwrap();
-					screenshot_ok = true;
-				}
-			});
-			let mut painter = ctx.layer_painter(LayerId::new(Order::Background, Id::new("image")));
-			painter.set_clip_rect(Rect::from_min_size(pos2(0.0, 0.0), window_size));
-			
-			if screenshot_ok {
-				painter.image(r_image.texture_id(ctx), Rect { min: pos2(0.0, 0.0), max: pos2(_frame.info().window_info.size.x, _frame.info().window_info.size.y) }, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
-			}
-			
-			_frame.set_decorations(false);
-			_frame.set_fullscreen(true);
-			
+            drop(config);
+
+            ctx.memory(|mem|{
+                let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
+                if mem_image.is_some(){
+                    r_image = RetainedImage::from_image_bytes("bytes", mem_image.unwrap().as_slice()).unwrap();
+                    screenshot_ok = true;
+                }
+            });
+            let mut painter = ctx.layer_painter(LayerId::new(Order::Background, Id::new("image")));
+            painter.set_clip_rect(Rect::from_min_size(pos2(0.0, 0.0), window_size));
+
+            if screenshot_ok {
+                painter.image(r_image.texture_id(ctx), Rect { min: pos2(0.0, 0.0), max: pos2(_frame.info().window_info.size.x, _frame.info().window_info.size.y) }, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
+            }
+
+            _frame.set_decorations(false);
+            _frame.set_fullscreen(true);
+
             match region {
                 Some(r) => {
                     let mut init_pos = r.min;
@@ -73,6 +73,24 @@ impl Content{
                     let handle_bl_pos = pos2(init_pos.x, final_pos.y);
                     let handle_bm_pos = pos2(init_pos.x + (reg_width/2.0), final_pos.y);
                     let handle_br_pos = final_pos;
+                    
+                    println!("\n region: {:?}", r);
+                    
+                    if init_pos.x < 0.0 {
+                        init_pos.x = 0.0;
+                    }
+                    if init_pos.y < 0.0 {
+                        init_pos.y = 0.0;
+                    }
+
+                    if final_pos.x > _frame.info().window_info.monitor_size.unwrap().x {
+                        final_pos.x = _frame.info().window_info.monitor_size.unwrap().x;
+                    }
+                    if final_pos.y > _frame.info().window_info.monitor_size.unwrap().y {
+                        final_pos.y = _frame.info().window_info.monitor_size.unwrap().y;
+                    }
+                    
+                    ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("region"), Rect::from_min_max(init_pos, final_pos)));
                     
                     let handle_tl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tl_rect"))){
                         Some(r) => r,
@@ -157,9 +175,8 @@ impl Content{
                                 }
                             }
                             else if handle_tl_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeNwSe);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_tl_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -199,9 +216,8 @@ impl Content{
                                 }
                             }
                             else if handle_tm_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeVertical);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_tm_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -231,9 +247,8 @@ impl Content{
                                 }
                             }
                             else if handle_tr_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeNeSw);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_tr_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -274,9 +289,8 @@ impl Content{
                                 }
                             }
                             else if handle_ml_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeHorizontal);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_ml_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -306,9 +320,8 @@ impl Content{
                                 }
                             }
                             else if handle_mr_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeHorizontal);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_mr_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -338,9 +351,8 @@ impl Content{
                                 }
                             }
                             else if handle_bl_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeNeSw);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_bl_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -381,9 +393,8 @@ impl Content{
                                 }
                             }
                             else if handle_bm_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeVertical);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_bm_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -413,9 +424,8 @@ impl Content{
                                 }
                             }
                             else if handle_br_rect.contains(pos){
-                                ctx.set_cursor_icon(CursorIcon::Grab);
+                                ctx.set_cursor_icon(CursorIcon::ResizeNwSe);
                                 if ctx.input(|i| i.pointer.primary_down()){
-                                    ctx.set_cursor_icon(CursorIcon::Grabbing);
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("init_grab_pos"), pos);
                                         mem.data.insert_temp(Id::new("handle_br_rect"), Rect::from_min_size(pos2(0.0,0.0), window_size));
@@ -523,7 +533,7 @@ impl Content{
                     
                 },
                 None => {
-			        ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
+                    ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
                     if ctx.input(|i| i.pointer.primary_released()){
                         ctx.memory_mut(|mem|{
                             let init_pos = mem.data.get_temp::<Pos2>(Id::new("init_pos"));
@@ -584,7 +594,7 @@ impl Content{
                     }
                 }
             }
-			
-		});
-	}
+
+        });
+    }
 }
