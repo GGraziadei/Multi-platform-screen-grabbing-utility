@@ -1,6 +1,6 @@
 use eframe::emath::Rect;
 use eframe::Theme;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color};
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, Button, Widget, hex_color};
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::windows::drawing_window::Drawing::{Arrow, Circle, Free, Line, Rectangle};
@@ -25,7 +25,7 @@ enum DrawingMode {
 
 impl Content{
 	pub fn drawing_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
-        let monitor_size = _frame.info().window_info.monitor_size.unwrap();
+        //let monitor_size = _frame.info().window_info.monitor_size.unwrap();
         let bg_color = ctx.style().visuals.panel_fill;
         let green = hex_color!("#16A085");
         let border_color = ctx.style().visuals.widgets.inactive.bg_stroke.color;
@@ -235,7 +235,7 @@ impl Content{
                         Arrow {p, v, s} => {
                             painter.arrow(p, v, s);
                         },
-                        Free {points, s, complete} => {
+                        Free {points, s, ..} => {
                             for i in 1..points.len() {
                                 painter.line_segment([points[i-1], points[i]], s);
                             }
@@ -308,7 +308,7 @@ impl Content{
                                         match drawings.last() {
                                             Some(d) => {
                                                 match d.clone() {
-                                                    Free {points, s, complete} => {
+                                                    Free {points,complete, .. } => {
                                                         if !complete {
                                                             let mut points = points.clone();
                                                             drawings.pop();
