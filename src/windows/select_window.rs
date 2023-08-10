@@ -1,5 +1,5 @@
 use eframe::epaint::{ColorImage, hex_color, Stroke};
-use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Response, Sense, Vec2};
+use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::{Content, };
 
@@ -91,42 +91,42 @@ impl Content{
                     
                     ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("region"), Rect::from_min_max(init_pos, final_pos)));
                     
-                    let mut handle_tl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tl_rect"))){
+                    let handle_tl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tl_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_tl_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_tm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tm_rect"))){
+                    let handle_tm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tm_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_tm_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_tr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tr_rect"))){
+                    let handle_tr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_tr_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_tr_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_ml_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_ml_rect"))){
+                    let handle_ml_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_ml_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_ml_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_mr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_mr_rect"))){
+                    let handle_mr_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_mr_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_mr_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_bl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bl_rect"))){
+                    let handle_bl_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bl_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_bl_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_bm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bm_rect"))){
+                    let  handle_bm_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_bm_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_bm_pos, Vec2::splat(10.0))
                     };
                     
-                    let mut handle_br_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_br_rect"))){
+                    let handle_br_rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("handle_br_rect"))){
                         Some(r) => r,
                         None => Rect::from_center_size(handle_br_pos, Vec2::splat(10.0))
                     };

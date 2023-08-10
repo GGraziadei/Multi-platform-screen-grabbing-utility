@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::File;
@@ -81,14 +81,6 @@ impl ImageFmt{
         }
     }
 
-    pub fn get_image_ext(&self) -> Option<String>
-    {
-        Some(match self{
-            ImageFmt::PNG => {".png".to_string()}
-            ImageFmt::JPG => {".jpeg".to_string()}
-            ImageFmt::GIF => {".gif".to_string()}
-        })
-    }
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone,PartialEq, Debug)]
@@ -145,12 +137,10 @@ impl  Display for KeyCombo {
 
         if self.k.is_some(){
             if next {
-                next = false;
                 str.push('+');
             }
             let _str = format!("{:?}", self.k.clone().unwrap());
             str.push_str(_str.as_str());
-            next = true;
         }
         
         write!(f, "{}",str)
@@ -288,46 +278,51 @@ impl Configuration{
        Some((self.app_name).clone())
     }
 
+    /*
     pub fn set_app_name(&mut self , app_name : String) -> Option<bool>
     {
         self.app_name = app_name;
         self.write()?;
         Some(true)
-    }
+    }*/
 
     pub fn get_save_path(&self) -> Option<String>
     {
         Some(self.save_path.clone())
     }
 
+    /*
     pub fn set_save_path(&mut self , save_path : String) -> Option<bool>
     {
         self.save_path=save_path;
         self.write()?;
         Some(true)
-    }
+    }*/
 
     pub fn get_image_fmt(&self) -> Option<ImageFmt>
     {
         Some(self.image_format.clone())
     }
 
+    /*
     pub fn set_image_fmt(&mut self , image_format : ImageFmt) -> Option<bool>
     {
         self.image_format = image_format;
         self.write()?;
         Some(true)
-    }
+    }*/
 
     pub fn get_save_region(&self) -> bool {
         self.save_region
     }
 
+    /*
     pub fn set_save_region(&mut self, save_region: bool) -> Option<bool> {
         self.save_region = save_region;
         self.write()?;
         Some(true)
     }
+     */
 
     pub fn get_region(&self) -> Option<Rect>
     {
@@ -346,24 +341,28 @@ impl Configuration{
         self.delay.clone()
     }
 
+    /*
     pub fn set_delay(&mut self, delay : Option<Duration> ) -> Option<bool>
     {
         self.delay = delay;
         self.write()?;
         Some(true)
-    }
+    }*/
 
     pub fn get_hot_key_map(&self) -> Option<HashMap<AcquireMode, KeyCombo>>
     {
         Some(self.hot_key_map.clone())
     }
 
+    /*
     pub fn set_hot_key_map(&mut self, map: HashMap<AcquireMode, KeyCombo>) -> Option<bool>
     {
         self.hot_key_map = map;
         self.write()?;
         Some(true)
     }
+
+     */
 
     pub fn get_filename(&self) -> Option<String>
     {
@@ -375,6 +374,7 @@ impl Configuration{
         Some(self.filename_pattern.clone())
     }
 
+    /*
     pub fn set_filename_pattern(&mut self, p : String) -> Option<bool>
     {
         self.filename_pattern = p;
@@ -382,17 +382,21 @@ impl Configuration{
         Some(true)
     }
 
+     */
+
     pub  fn get_when_capture(&self) -> Option<AcquireAction>
     {
         Some(self.when_capture)
     }
 
+    /*
     pub  fn set_when_capture(&mut self, aa : AcquireAction) -> Option<bool>
     {
         self.when_capture = aa;
         self.write()?;
         Some(true)
     }
+     */
 
     fn write(&self) -> Option<&'static str>
     {

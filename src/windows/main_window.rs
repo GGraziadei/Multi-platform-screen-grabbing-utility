@@ -1,6 +1,5 @@
 use eframe::emath::{Align, Vec2};
-use egui::{CentralPanel, Context, Direction, Frame, Id, Layout, Margin, RichText, SidePanel, TopBottomPanel};
-use egui::Align::Center;
+use egui::{CentralPanel, Context, Direction, Frame, Layout, Margin, TopBottomPanel};
 use crate::window::{Content};
 use crate::window::WindowType::*;
 

@@ -4,8 +4,7 @@ use std::path::Path;
 use std::thread::{JoinHandle,  spawn};
 use arboard::{Clipboard, ImageData};
 use egui::ColorImage;
-use egui_extras::RetainedImage;
-use image::{ColorType, Frame, ImageBuffer, ImageError, ImageFormat, ImageResult, load_from_memory, load_from_memory_with_format};
+use image::{ColorType, ImageError, ImageFormat, ImageResult};
 use image::ColorType::Rgba8;
 use image::error::{EncodingError, ImageFormatHint};
 use image::ImageFormat::{Jpeg, Png, Gif};
@@ -55,7 +54,7 @@ impl From<ColorImage> for ImageFormatter {
             buffer: Vec::from(value.as_raw().clone()),
             width: value.width() as u32,
             height: value.height() as u32,
-            color_type: ColorType::Rgba8,
+            color_type: Rgba8,
         }
     }
 }
@@ -75,7 +74,8 @@ impl ImageFormatter{
                 info!("PNG encoding");
                 let result = image::save_buffer_with_format(p,&formatter.buffer,formatter.width,formatter.height,formatter.color_type,Png);
                 info!("PNG encoding end.");
-                notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str());
+                notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str())
+                    .expect("OS API error.");
                 result
             }
             Jpeg => {
@@ -85,7 +85,8 @@ impl ImageFormatter{
                 let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(w_buffer, JPEG_QUALITY);
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("JPEG encoding end.");
-                notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str());
+                notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str())
+                    .expect("OS API error.");
                 result
             }
             Gif => {
@@ -101,7 +102,8 @@ impl ImageFormatter{
                 */
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("GIF encoding end.");
-                notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str());
+                notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str())
+                    .expect("OS API error.");
                 result
             }
             /*
@@ -129,7 +131,7 @@ impl ImageFormatter{
     pub fn save_fmt(&self, path : String, fmt : ImageFmt ) -> EncoderThread
     {
 
-        let mut p : String = String::from(path);
+        let p : String = String::from(path);
         // p.push_str(&fmt.get_image_ext().unwrap());
 
         let image_format = fmt.get_image_format();
@@ -153,7 +155,8 @@ impl ImageFormatter{
     pub fn to_clipboard(&self) -> Result<(), arboard::Error>
     {
         let mut cb = Clipboard::new()?;
-        notifica::notify("Image available in clipboard.", "");
+        notifica::notify("Image available in clipboard.", "")
+            .expect("OS API error.");
         cb.set_image(ImageData {
             width: self.width as usize,
             height: self.height as usize,

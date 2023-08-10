@@ -1,4 +1,3 @@
-use anyhow::Context;
 use image::{DynamicImage, ImageBuffer, imageops};
 use log::{error, info};
 use screenshots::Image;
@@ -45,7 +44,7 @@ impl ImageCombiner {
                 Ok(i) => {
                     let img = ImageBuffer::from_raw(i.width(), i.height(),i.rgba().as_slice())?;
                     imageops::overlay(&mut buffer_image,&img,offset,0);
-                    offset += ( i.width() as i64);
+                    offset +=  i.width() as i64;
                 }
                 Err(error) => {
                     notifica::notify("Error in screenshot acquisition.", &error.to_string())

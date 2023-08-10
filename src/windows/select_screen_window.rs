@@ -55,7 +55,7 @@ impl Content {
 					ui.horizontal_wrapped( |ui|{
 						ui.spacing_mut().item_spacing.x = 9.9;
 						ui.spacing_mut().item_spacing.y = 20.0;
-						let mut container_height = 180.0;
+						let container_height = 180.0;
 						let mut rects = vec![];
 						for (i, image) in images.iter().enumerate() {
 							rects.push(
@@ -86,7 +86,7 @@ impl Content {
 									Some(pos) => {
 										if rect.contains(pos){
 											if i.pointer.primary_clicked(){
-												selected_screen = n as i32;;
+												selected_screen = n as i32;
 											}
 											return true;
 										}

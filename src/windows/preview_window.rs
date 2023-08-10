@@ -1,5 +1,5 @@
 use eframe::Theme;
-use egui::{Align, Button, Color32, ColorImage, Context, Direction, Frame, hex_color, Id, Image, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2, Widget};
+use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::Content;
 use crate::window::WindowType::Settings;
@@ -39,10 +39,10 @@ impl Content {
 		else {
 			ctx.memory(|mem|{
 				let fast_bytes = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));
-				if fast_bytes.is_some(){
+				if let Some(screenshot) = fast_bytes{
 					r_image = RetainedImage::from_image_bytes(
 						"screenshot",
-						fast_bytes.unwrap().as_slice()
+						screenshot.as_slice()
 					).unwrap();
 					screenshot_ok = true;
 				}
@@ -110,14 +110,19 @@ impl Content {
 								icon_size,
 								"Salva come...")).clicked()
 						{
-							let path = native_dialog::FileDialog::new()
+							match native_dialog::FileDialog::new()
 								.add_filter("png", &["png"])
 								.add_filter("jpg", &["jpg"])
 								.add_filter("gif", &["gif"])
-								.show_save_single_file().unwrap();
-							if path.is_some(){
-								self.save_image(ctx, path);
-							}
+								.show_save_single_file() {
+								Ok(path) => {
+									self.save_image(ctx, path);
+								}
+								Err(error) => {
+									notifica::notify("Error during FileDialog open", &error.to_string())
+										.expect("OS API error.");
+								}
+							};
 						}
 						if ui.add(
 							Button::image_and_text(
@@ -150,10 +155,10 @@ impl Content {
 						
 						painter.set_clip_rect(painter_rect);
 						// painter.rect_filled(painter_rect, 0.0, Color32::RED);
-						
+
 						if screenshot_ok {
 							let uv_rect = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
-							let mut image_rect = Rect::from_min_size(pos2(0.0,0.0), Vec2::new(0.0,0.0));
+							let image_rect;
 							if r_image.width() > r_image.height(){
 								let image_rect_w = size_x;
 								let image_rect_h = image_rect_w/r_image.width() as f32 * r_image.height() as f32;

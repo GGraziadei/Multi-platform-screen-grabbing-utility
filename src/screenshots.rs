@@ -1,9 +1,8 @@
-use std::sync::{Arc, Condvar, LockResult, Mutex, RwLock};
-use std::sync::mpsc::{Receiver, RecvError, SendError, sync_channel, SyncSender};
+use std::sync::{Arc, RwLock};
+use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
 use std::thread;
-use std::thread::{Builder, JoinHandle, spawn};
+use std::thread::{ JoinHandle, spawn};
 use std::time::Duration;
-use anyhow::Error;
 use log::info;
 use screenshots::{DisplayInfo, Image, Screen};
 use crate::configuration::Configuration;
@@ -13,18 +12,6 @@ pub struct CaptureArea{
     y: i32,
     width: u32,
     height: u32
-}
-
-impl CaptureArea{
-    pub fn new(x : i32 ,y : i32,width : u32,height:u32) -> Option<Self>
-    {
-        Some(Self{
-            x,
-            y,
-            width,
-            height,
-        })
-    }
 }
 
 struct PrintData{
@@ -82,7 +69,7 @@ impl ScreenshotExecutor{
                         drop(configuration_lock);
 
                         /*Results message*/
-                        let mut msg : ScreenshotMessage;
+                        let msg : ScreenshotMessage;
 
                         if pd.di.is_none() {
                             let screens = match Screen::all() {
