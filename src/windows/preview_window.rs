@@ -1,7 +1,6 @@
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
-use crate::configuration::AcquireAction;
 use crate::window::Content;
 use crate::window::WindowType::{Drawing, Settings};
 

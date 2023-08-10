@@ -1,4 +1,3 @@
-use eframe::emath::Vec2;
 use egui::{Context, Id, pos2};
 use crate::window::Content;
 

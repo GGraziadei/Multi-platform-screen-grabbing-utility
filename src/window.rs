@@ -286,7 +286,6 @@ impl eframe::App for Content {
                 }
             }
         };
-        drop(configuration_read);
 
         for (am, kc) in hkm {
             if let Some(k) = kc.k {
