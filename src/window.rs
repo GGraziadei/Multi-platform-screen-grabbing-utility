@@ -271,7 +271,7 @@ impl Content {
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         
-        if self.window_type != Settings {
+        if self.window_type != Settings && self.window_type != Drawing {
             let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
                 Some(hkm) => hkm,
                 None => match self.configuration.read(){

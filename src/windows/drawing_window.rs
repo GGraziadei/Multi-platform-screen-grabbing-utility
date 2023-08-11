@@ -1,14 +1,11 @@
 use eframe::emath::Rect;
 use eframe::epaint::Rgba;
 use eframe::Theme;
-use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, ImageButton, Button, Widget, hex_color, DragValue, Area, TextStyle, Align2, FontId, FontFamily, RichText};
-use egui::color_picker::{Alpha, color_edit_button_hsva, color_edit_button_rgba};
-use egui::ecolor::Hsva;
-use egui::plot::{PlotPoint, Text};
+use egui::{Align, CentralPanel, Color32, Context, Frame, Id, LayerId, Layout, Margin, Order, pos2, TopBottomPanel, Vec2, Stroke, Pos2, Button, Widget, hex_color, DragValue, Align2, FontId, FontFamily, KeyboardShortcut, Modifiers, Key};
+use egui::color_picker::{Alpha, color_edit_button_rgba};
 use egui_extras::RetainedImage;
-use log::info;
 use crate::window::Content;
-use crate::window::WindowType::{Drawing, Preview};
+use crate::window::WindowType::{Preview};
 use crate::windows::drawing_window::Drawings::{Arrow, Circle, Free, Line, Numbers, Rectangle};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -38,6 +35,11 @@ impl Content{
         let green = hex_color!("#16A085");
         let border_color = ctx.style().visuals.widgets.inactive.bg_stroke.color;
         let mut drawings = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawings>>(Id::from("drawings"))){
+            Some(d) => d.clone(),
+            None => Vec::<Drawings>::new(),
+        };
+
+        let mut drawings_redo = match ctx.memory(|mem| mem.data.get_temp::<Vec<Drawings>>(Id::from("drawings_redo"))){
             Some(d) => d.clone(),
             None => Vec::<Drawings>::new(),
         };
@@ -103,6 +105,10 @@ impl Content{
             "undo",
             include_bytes!("../images/undo_black.svg"),
             egui_extras::image::FitTo::Original).unwrap();
+        let mut redo_icon = RetainedImage::from_svg_bytes_with_size(
+            "redo",
+            include_bytes!("../images/redo_black.svg"),
+            egui_extras::image::FitTo::Original).unwrap();
         let mut delete_all_icon = RetainedImage::from_svg_bytes_with_size(
             "delete_all",
             include_bytes!("../images/delete_all_black.svg"),
@@ -123,12 +129,20 @@ impl Content{
         let icon_size = Vec2::splat(16.0);
 
 
-        ctx.input_mut(|i| {
+        if ctx.input_mut(|i| {
             let shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
-            if i.consume_shortcut(&shortcut) {
+            i.consume_shortcut(&shortcut)
+        }){
+            undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+        }
 
-            }
-        });
+        if ctx.input_mut(|i| {
+            let shortcut_1 = KeyboardShortcut::new(Modifiers::COMMAND, Key::Y);
+            let shortcut_2 = KeyboardShortcut::new(Modifiers {command: true, shift: true, ..Default::default()}, Key::Z);
+            i.consume_shortcut(&shortcut_1) || i.consume_shortcut(&shortcut_2)
+        }){
+            redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+        }
         
         if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark {
             draw_icon = RetainedImage::from_svg_bytes_with_size(
@@ -158,6 +172,10 @@ impl Content{
             undo_icon = RetainedImage::from_svg_bytes_with_size(
                 "undo",
                 include_bytes!("../images/undo_white.svg"),
+                egui_extras::image::FitTo::Original).unwrap();
+            redo_icon = RetainedImage::from_svg_bytes_with_size(
+                "redo",
+                include_bytes!("../images/redo_white.svg"),
                 egui_extras::image::FitTo::Original).unwrap();
             delete_all_icon = RetainedImage::from_svg_bytes_with_size(
                 "delete_all",
@@ -297,26 +315,14 @@ impl Content{
                     
                     ui.add_space(20.0);
                     
-                    let undo = ui.add_enabled(drawings.len() > 0 ,Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla"));
-                    if undo.clicked(){
-                        match drawings.last(){
-                            Some(d) => {
-                                match d {
-                                    Numbers { .. } => {
-                                        drawings.pop();
-                                        ctx.memory_mut(|mem| {
-                                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                                            mem.data.insert_temp(Id::from("circle_number"), circle_number - 1);
-                                        });
-                                }
-                                    _ => {
-                                        drawings.pop();
-                                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
-                                    }
-                                }
-                            },
-                            None => ()
-                        }
+                    let undo_button = ui.add_enabled(drawings.len() > 0, Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla"));
+                    if undo_button.clicked(){
+                        undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+                    };
+
+                    let redo_button = ui.add_enabled(drawings_redo.len() > 0, Button::image_and_text(redo_icon.texture_id(ctx), icon_size, "Rifai"));
+                    if redo_button.clicked(){
+                        redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
                     };
                     
                     if Button::image_and_text(delete_all_icon.texture_id(ctx), icon_size, "Cancella").ui(ui).clicked(){
@@ -434,8 +440,10 @@ impl Content{
                                     DrawingMode::Numbers => {
                                         drawings.push(Numbers {p: mouse_pos, n: circle_number, c: color});
                                         ctx.memory_mut(|mem| {
+                                            drawings_redo.clear();
                                             mem.data.insert_temp(Id::from("circle_number"), circle_number + 1);
                                             mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                                            mem.data.insert_temp(Id::from("drawings_redo"), drawings_redo.clone());
                                         });
                                     },
                                     _ => {}
@@ -529,9 +537,10 @@ impl Content{
                                             }
                                         };
                                         ctx.memory_mut(|mem| {
+                                            drawings_redo.clear();
                                             mem.data.insert_temp(Id::from("prev_pos"), mouse_pos);
                                             mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                                            
+                                            mem.data.insert_temp(Id::from("drawings_redo"), drawings_redo.clone());
                                         });
                                     }
                                     _ => {}
@@ -594,7 +603,9 @@ impl Content{
                                 }
         
                                 ctx.memory_mut(|mem| {
+                                    drawings_redo.clear();
                                     mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                                    mem.data.insert_temp(Id::from("drawings_redo"), drawings_redo.clone());
                                     mem.data.remove::<Pos2>(Id::from("init_pos"));
                                     mem.data.remove::<Rect>(Id::from("hover_rect"));
                                 });
@@ -606,3 +617,57 @@ impl Content{
             });
     }
 }
+fn undo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
+    match drawings.last(){
+        Some(d) => {
+            match d {
+                Numbers { .. } => {
+                    redo.push(d.clone());
+                    drawings.pop();
+                    ctx.memory_mut(|mem| {
+                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
+                        mem.data.insert_temp(Id::from("circle_number"), circle_number - 1);
+                    });
+            }
+                _ => {
+                    redo.push(d.clone());
+                    drawings.pop();
+                    ctx.memory_mut(|mem| {
+                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
+                    });
+                }
+            }
+        },
+        None => ()
+    }
+}
+
+fn redo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
+    match redo.last(){
+        Some(d) => {
+            match d {
+                Numbers { .. } => {
+                    drawings.push(d.clone());
+                    redo.pop();
+                    ctx.memory_mut(|mem| {
+                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
+                        mem.data.insert_temp(Id::from("circle_number"), circle_number + 1);
+                    });
+            }
+                _ => {
+                    drawings.push(d.clone());
+                    redo.pop();
+                    ctx.memory_mut(|mem| {
+                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
+                    });
+                }
+            }
+        },
+        None => ()
+    }
+}
+
