@@ -8,7 +8,7 @@ use egui::plot::{PlotPoint, Text};
 use egui_extras::RetainedImage;
 use log::info;
 use crate::window::Content;
-use crate::window::WindowType::Preview;
+use crate::window::WindowType::{Drawing, Preview};
 use crate::windows::drawing_window::Drawings::{Arrow, Circle, Free, Line, Numbers, Rectangle};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -289,16 +289,35 @@ impl Content{
                     
                     ui.add_space(20.0);
                     
-                    if Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla").ui(ui).clicked(){
-                        drawings.pop();
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
+                    let undo = ui.add_enabled(drawings.len() > 0 ,Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla"));
+                    if undo.clicked(){
+                        match drawings.last(){
+                            Some(d) => {
+                                match d {
+                                    Numbers { .. } => {
+                                        drawings.pop();
+                                        ctx.memory_mut(|mem| {
+                                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                                            mem.data.insert_temp(Id::from("circle_number"), circle_number - 1);
+                                        });
+                                }
+                                    _ => {
+                                        drawings.pop();
+                                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
+                                    }
+                                }
+                            },
+                            None => ()
+                        }
                     };
                     
                     if Button::image_and_text(delete_all_icon.texture_id(ctx), icon_size, "Cancella").ui(ui).clicked(){
                         drawings.clear();
-                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("drawings"), drawings.clone()));
-                    };
-                    
+                        ctx.memory_mut(|mem| {
+                            mem.data.insert_temp(Id::from("circle_number"), 1u32);
+                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                        });
+                    }
                     ui.with_layout(Layout::right_to_left(Align::TOP), |ui|{
                         if Button::image_and_text(save_icon.texture_id(ctx), icon_size, "Salva").ui(ui).clicked(){
                             let rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("rect"))){
