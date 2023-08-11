@@ -13,6 +13,7 @@ use crate::screenshots::{ScreenshotExecutor};
 use WindowType::*;
 use crate::image_combiner::ImageCombiner;
 
+#[derive(Eq, PartialEq)]
 pub enum WindowType {
     Main,
     Settings,
@@ -269,38 +270,41 @@ impl Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-
-        let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
-            Some(hkm) => hkm,
-            None => match self.configuration.read(){
-                Ok(config) => {
-                    if let Some(hkm) = config.get_hot_key_map(){
-                        hkm
-                    }else{
-                        panic!("Configuration poisoned.");
+        
+        if self.window_type != Settings {
+            let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
+                Some(hkm) => hkm,
+                None => match self.configuration.read(){
+                    Ok(config) => {
+                        if let Some(hkm) = config.get_hot_key_map(){
+                            hkm
+                        }else{
+                            panic!("Configuration poisoned.");
+                        }
+                    }
+                    Err(error) => {
+                        /*Gui thread have to access to configuration file. If it is poisoned panic*/
+                        panic!("{}", error);
                     }
                 }
-                Err(error) => {
-                    /*Gui thread have to access to configuration file. If it is poisoned panic*/
-                    panic!("{}", error);
-                }
-            }
-        };
-
-        for (am, kc) in hkm {
-            if let Some(k) = kc.k {
-                let shortcut = KeyboardShortcut::new(kc.m, k);
-                let mut i = ctx.input(|i| i.clone() );
-                if i.consume_shortcut(&shortcut){
-                    match am {
-                        AcquireMode::CurrentScreen => {self.current_screen(ctx, _frame)}
-                        AcquireMode::SelectScreen => {self.select_screen(ctx, _frame)}
-                        AcquireMode::AllScreens => {self.all_screens(ctx, _frame)}
-                        AcquireMode::Portion => {self.portion(ctx, _frame)}
+            };
+    
+            for (am, kc) in hkm {
+                if let Some(k) = kc.k {
+                    let shortcut = KeyboardShortcut::new(kc.m, k);
+                    let mut i = ctx.input(|i| i.clone() );
+                    if i.consume_shortcut(&shortcut){
+                        match am {
+                            AcquireMode::CurrentScreen => {self.current_screen(ctx, _frame)}
+                            AcquireMode::SelectScreen => {self.select_screen(ctx, _frame)}
+                            AcquireMode::AllScreens => {self.all_screens(ctx, _frame)}
+                            AcquireMode::Portion => {self.portion(ctx, _frame)}
+                        }
                     }
                 }
             }
         }
+        
 
         match self.window_type{
             Main => self.main_window(ctx, _frame),
