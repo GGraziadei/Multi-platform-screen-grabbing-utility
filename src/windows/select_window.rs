@@ -1,7 +1,8 @@
 use eframe::epaint::{ColorImage, hex_color, Stroke};
-use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Vec2};
+use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, Key, KeyboardShortcut, LayerId, Layout, Modifiers, Order, pos2, Pos2, Rect, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::{Content, };
+use crate::window::WindowType::Preview;
 
 impl Content{
     pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -131,9 +132,10 @@ impl Content{
                     };
                     
                     
-                    let mut button_id = Id::new("button");
-                    
-                    let button = ui.with_layer_id(LayerId::new(Order::Foreground, Id::from("")), |ui|{
+                    let mut save_id = Id::new("save");
+                    let mut cancel_id = Id::new("cancel");
+
+                    let buttons = ui.with_layer_id(LayerId::new(Order::Foreground, Id::from("")), |ui|{
                         ui.set_visible(visible);
                         if !visible {
                             self.set_region(r);
@@ -148,28 +150,40 @@ impl Content{
                             drop(config);
                             _frame.request_screenshot();
                         }
-                        ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui|{
-                            ui.visuals_mut().widgets.inactive.weak_bg_fill = Color32::RED;
-                            ui.visuals_mut().widgets.hovered.weak_bg_fill = green;
+                        ui.with_layout(Layout::right_to_left(Align::TOP), |ui|{
+                            ui.visuals_mut().widgets.inactive.weak_bg_fill = Color32::from_gray(220);
+                            ui.visuals_mut().widgets.inactive.fg_stroke.color = Color32::from_gray(0);
+                            ui.visuals_mut().widgets.hovered.fg_stroke.color = Color32::from_gray(0);
+                            ui.visuals_mut().widgets.hovered.weak_bg_fill = Color32::from_gray(200);
                             ui.spacing_mut().button_padding = Vec2::splat(10.0);
-                            let button_widget = ui.button("Salva");
-                            button_id = button_widget.id;
-                            button_widget
+                            let save_widget = ui.button("Salva");
+                            let cancel_widget = ui.button("Annulla");
+                            save_id = save_widget.id;
+                            cancel_id = cancel_widget.id;
+                            (save_widget, cancel_widget)
                         })
                     });
                     
-                    let button_rect = button.inner.inner.rect;
-                    
+                    let save_rect = buttons.inner.inner.0.rect;
+                    let cancel_rect = buttons.inner.inner.1.rect;
+
                     let mouse_pos = ctx.input(|i| i.pointer.hover_pos());
                     match mouse_pos {
                         Some(pos) => {
-                            if button_rect.contains(pos){
-                                ctx.highlight_widget(button_id);
+                            if save_rect.contains(pos){
+                                ctx.highlight_widget(save_id);
                                 ctx.set_cursor_icon(CursorIcon::PointingHand);
                                 if ctx.input(|i| i.pointer.primary_clicked()){
                                     ctx.memory_mut(|mem|{
                                         mem.data.insert_temp(Id::new("visible"), false);
                                     });
+                                }
+                            }
+                            else if cancel_rect.contains(pos){
+                                ctx.highlight_widget(cancel_id);
+                                ctx.set_cursor_icon(CursorIcon::PointingHand);
+                                if ctx.input(|i| i.pointer.primary_clicked()){
+                                    self.set_win_type(Preview);
                                 }
                             }
                             else if handle_tl_rect.contains(pos){

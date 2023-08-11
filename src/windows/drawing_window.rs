@@ -121,6 +121,14 @@ impl Content{
             egui_extras::image::FitTo::Original).unwrap();
         
         let icon_size = Vec2::splat(16.0);
+
+
+        ctx.input_mut(|i| {
+            let shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
+            if i.consume_shortcut(&shortcut) {
+
+            }
+        });
         
         if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark {
             draw_icon = RetainedImage::from_svg_bytes_with_size(
@@ -422,7 +430,6 @@ impl Content{
                         if hover_rect.contains(mouse_pos) && !color_picker_open{
                             
                             if ctx.input(|i| i.pointer.primary_clicked()){
-                                println!("clicked");
                                 match drawing_mode {
                                     DrawingMode::Numbers => {
                                         drawings.push(Numbers {p: mouse_pos, n: circle_number, c: color});
