@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::default::Default;
 use std::time::Duration;
+use eframe::epaint::Rounding;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Stroke, Label, Key};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
@@ -436,10 +438,61 @@ impl Content {
                                     
                                     ui.allocate_ui_with_layout(right_size,Layout::left_to_right(Align::TOP), |ui|{
                                         ui.spacing_mut().item_spacing.x = 10.0;
-                                        let mut text_edit = TextEdit::singleline(&mut kc.to_string()).margin(Vec2::splat(8.0)).ui(ui);
-                                        if text_edit.has_focus(){
+                                        // let mut text_edit = TextEdit::singleline(&mut kc.to_string()).margin(Vec2::splat(8.0)).ui(ui);
+                                        
+                                        let mut label_state = match ui.memory(|mem| mem.data.get_temp::<Vec<(bool, bool)>>(Id::from("label_state"))){
+                                            Some(v) => v,
+                                            None => vec![(false, false),(false, false),(false, false),(false, false)],
+                                        }; //(hovered, focused)
+                                        
+                                        let mut stroke = Stroke::new(0.0, Color32::from_gray(200));
+                                        
+                                        if label_state[am as usize].0 {
+                                            stroke.width = 1.0;
+                                        }
+                                        
+                                        let frame = Frame {
+                                            fill: Color32::from_gray(10),
+                                            inner_margin: Margin::same(8.0),
+                                            rounding: Rounding::same(2.0),
+                                            stroke,
+                                            ..Default::default()};
+                                        
+                                        let label = frame.show(ui, |ui|{
+                                            ui.add_sized(Vec2::new(200.0, 14.0), Label::new(kc.to_string()));
+                                        }).response;
+                                        
+                                        
+                                        if label_state[am as usize].1 {
+                                            label.request_focus();
+                                        }
+                                        
+                                        if label.interact(Sense::click()).clicked() {
+                                            label.request_focus();
+                                            label_state[am as usize].1 = true;
+                                            hot_key_map.insert(am, KeyCombo::default());
+                                            ctx.memory_mut(|mem|{
+                                                mem.data.insert_temp(Id::from("hot_key_map"), hot_key_map.clone());
+                                            })
+                                        }
+                                        else if label.clicked_elsewhere() {
+                                            label_state[am as usize].1 = false;
+                                        }
+                                        
+                                        if label.hovered(){
+                                            label_state[am as usize].0 = true;
+                                        }
+                                        else {
+                                            label_state[am as usize].0 = false;
+                                        }
+                                        
+                                        label.clone().on_hover_cursor(CursorIcon::Text);
+                                        
+                                        if label.has_focus(){
                                             if !kc.contains_key(){
                                                 kc = ctx.input(|i|{
+                                                    println!("{:?}", i.keys_down);
+                                                    println!("{}", i.key_pressed(Key::Num2));
                                                     KeyCombo::new(i.modifiers.clone(), i.keys_down.clone().iter().nth(0).map(|k| k.clone()))
                                                 });
                                                 hot_key_map.insert(am, kc.clone());
@@ -448,20 +501,22 @@ impl Content {
                                                 })
                                             }
                                             else {
-                                                text_edit = text_edit.interact(Sense::hover());
+                                                // text_edit = text_edit.interact(Sense::hover());
+                                                label_state[am as usize].1 = false;
                                             }
                                         }
                                         let mut icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_black.svg")).unwrap();
                                         if _frame.info().system_theme.is_none() || _frame.info().system_theme == Some(Theme::Dark){
                                             icon = RetainedImage::from_svg_bytes("", include_bytes!("../images/delete_white.svg")).unwrap();
                                         }
-                                        let button_dim = text_edit.rect.height() - 8.0;
+                                        let button_dim = label.rect.height() - 8.0;
                                         if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
                                             hot_key_map.insert(am, KeyCombo::default());
                                             ctx.memory_mut(|mem|{
                                                 mem.data.insert_temp(Id::from("hot_key_map"), hot_key_map.clone());
                                             })
                                         };
+                                        ctx.memory_mut(|mem| mem.data.insert_temp(Id::from("label_state"), label_state));
                                     });
                                 });
                             ui.add_space(10.0);
