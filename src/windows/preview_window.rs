@@ -196,7 +196,7 @@ impl Content {
 				);
 			});
 		SidePanel::right("right")
-			.frame(Frame{inner_margin: Margin::same(margin), fill: bg_color, ..Default::default()})
+			.frame(Frame{inner_margin: Margin {left: 0.0, ..Margin::same(20.0)}, fill: bg_color, ..Default::default()})
 			.show_separator_line(false)
 			.resizable(false)
 			.exact_width(window_size.x*(1.0-w))
