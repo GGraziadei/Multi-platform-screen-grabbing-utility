@@ -39,11 +39,11 @@ impl Content {
             }
         }
 
-		_frame.set_visible(true);
 		_frame.set_window_size(Vec2::new(1000.0, 550.0));
+		_frame.set_visible(true);
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
-		_frame.set_maximized(false);
+		//_frame.set_maximized(false);
 
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));

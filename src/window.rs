@@ -116,7 +116,7 @@ impl Content {
                         ctx.memory_mut(|mem|{
                             mem.data.insert_temp(Id::from("screenshot"), img_bytes);
                             if let Ok(img_bytes_fast) = screenshot.to_png(None){
-                                mem.data.insert_temp(Id::from("bytes"), img_bytes_fast.clone());
+                                mem.data.insert_temp(Id::from("bytes"), img_bytes_fast);
                             }
                             mem.data.insert_temp(Id::from("width"), screenshot.width());
                             mem.data.insert_temp(Id::from("height"), screenshot.height());
@@ -364,7 +364,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
     };
 
     let options = eframe::NativeOptions{
-        // resizable: false,
+        resizable: true,
         follow_system_theme: true,
         default_theme: Theme::Dark,
         // centered: true,

@@ -56,7 +56,7 @@ impl Content{
                 painter.image(r_image.texture_id(ctx), Rect { min: pos2(0.0, 0.0), max: pos2(_frame.info().window_info.size.x, _frame.info().window_info.size.y) }, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
             }
 
-            _frame.set_decorations(false);
+            //_frame.set_decorations(false);
             _frame.set_fullscreen(true);
             _frame.set_visible(true);
 
