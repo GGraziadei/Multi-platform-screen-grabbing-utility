@@ -58,6 +58,7 @@ impl Content{
 
             _frame.set_decorations(false);
             _frame.set_fullscreen(true);
+            _frame.set_visible(true);
 
             match region {
                 Some(r) => {
