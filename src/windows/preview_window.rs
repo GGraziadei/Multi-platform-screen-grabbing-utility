@@ -9,12 +9,12 @@ impl Content {
 	pub fn screenshot_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
 		let window_size = _frame.info().window_info.size;
 		let bg_color = ctx.style().visuals.panel_fill;
-		let w = 0.6;
+		let w = 0.7;
 		let margin = 20.0;
 		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
 		let mut screenshot_ok = false;
 
-		_frame.set_window_size(Vec2::new(1000.0, 600.0));
+		_frame.set_window_size(Vec2::new(1000.0, 550.0));
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
 		_frame.set_maximized(false);
@@ -206,27 +206,33 @@ impl Content {
 					|ui| {
 						ui.spacing_mut().item_spacing.y = 10.0;
 						ui.label(RichText::new("Acquisisci una nuova schermata").size(16.0));
-						ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
-						if ui.button("Schermo attuale").clicked(){
-							self.current_screen(ctx, _frame);
-							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
-						};
-						if ui.button("Selziona schermo").clicked(){
-							self.select_screen(ctx, _frame);
-							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
-						};
-						if ui.button("Tutti gli schermi").clicked(){
-							self.all_screens(ctx, _frame);
-							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
-						};
-						if ui.button("Regione rettangolare").clicked(){
-							self.portion(ctx, _frame);
-							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
-						};
-						if ui.button("Impostazioni").clicked(){
-							self.set_win_type(Settings);
-							ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
-						};
+						ui.allocate_ui_with_layout(
+							Vec2::new(180.0, window_size.y),
+							Layout::top_down_justified(Align::Center),
+							|ui|{
+								ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
+								if ui.button("Schermo attuale").clicked(){
+									self.current_screen(ctx, _frame);
+									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
+								};
+								if ui.button("Selziona schermo").clicked(){
+									self.select_screen(ctx, _frame);
+									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
+								};
+								if ui.button("Tutti gli schermi").clicked(){
+									self.all_screens(ctx, _frame);
+									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
+								};
+								if ui.button("Regione rettangolare").clicked(){
+									self.portion(ctx, _frame);
+									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
+								};
+								if ui.button("Impostazioni").clicked(){
+									self.set_win_type(Settings);
+									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
+								};
+							}
+						)
 					});
 			});
 	}
