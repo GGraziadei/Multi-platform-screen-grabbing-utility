@@ -155,8 +155,10 @@ impl ImageFormatter{
     pub fn to_clipboard(&self) -> Result<(), arboard::Error>
     {
         let mut cb = Clipboard::new()?;
-        notifica::notify("Image available in clipboard.", "")
-            .expect("OS API error.");
+        match notifica::notify("Image available in clipboard.", "") {
+            Ok(_) => {}
+            Err(_) => {}
+        }
         cb.set_image(ImageData {
             width: self.width as usize,
             height: self.height as usize,
