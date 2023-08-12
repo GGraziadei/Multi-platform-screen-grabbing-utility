@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use directories::UserDirs;
 use log::info;
 
+const SETTINGS_FILE: &'static str = ".settings.json";
+
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AcquireMode{
     /*Current screen*/
@@ -196,8 +198,6 @@ impl Default for Configuration{
         }
     }
 }
-
-const SETTINGS_FILE: &'static str = "settings.json";
 
 impl Configuration{
 

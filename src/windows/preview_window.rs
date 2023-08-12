@@ -1,6 +1,7 @@
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
+use crate::configuration::AcquireMode;
 use crate::window::Content;
 use crate::window::WindowType::{Drawing, Settings};
 use crate::windows::drawing_window::Drawings;
@@ -14,6 +15,31 @@ impl Content {
 		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
 		let mut screenshot_ok = false;
 
+        match self.get_acquire_mode() {
+            None => {}
+            Some(am) => {
+                match am {
+                    AcquireMode::CurrentScreen => {
+                        self.set_acquire_mode(None);
+                        self.current_screen(ctx, _frame);
+                    }
+                    AcquireMode::SelectScreen => {
+                        self.set_acquire_mode(None);
+                        self.select_screen(ctx, _frame);
+                    }
+                    AcquireMode::AllScreens => {
+                        self.set_acquire_mode(None);
+                        self.all_screens(ctx, _frame);
+                    }
+                    AcquireMode::Portion => {
+                        self.set_acquire_mode(None);
+                        self.portion(ctx, _frame);
+                    }
+                }
+            }
+        }
+
+		_frame.set_visible(true);
 		_frame.set_window_size(Vec2::new(1000.0, 550.0));
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
@@ -22,8 +48,8 @@ impl Content {
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
 
-		if self.get_colorimage().is_some(){
-			r_image = RetainedImage::from_color_image("screenshot", self.get_colorimage().clone().unwrap());
+		if self.get_color_image().is_some(){
+			r_image = RetainedImage::from_color_image("screenshot", self.get_color_image().clone().unwrap());
 			screenshot_ok = true;
 		}
 		else {
@@ -38,6 +64,10 @@ impl Content {
 				}
 			});
 		}
+
+        /*
+            Acquire action: action when acquire screenshot
+        */
 		let aa_done = match ctx.memory(|mem| mem.data.get_temp::<bool>(Id::from("aa_done"))){
 			Some(a) => a,
 			None => false
@@ -212,19 +242,24 @@ impl Content {
 							|ui|{
 								ui.spacing_mut().button_padding = Vec2::new(10.0, 10.0);
 								if ui.button("Schermo attuale").clicked(){
-									self.current_screen(ctx, _frame);
+									//self.current_screen(ctx, _frame);
+                                    _frame.set_visible(false);
+                                    self.set_acquire_mode(Some(AcquireMode::CurrentScreen));
 									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 								};
 								if ui.button("Selziona schermo").clicked(){
-									self.select_screen(ctx, _frame);
+                                    _frame.set_visible(false);
+                                    self.set_acquire_mode(Some(AcquireMode::SelectScreen));
 									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 								};
 								if ui.button("Tutti gli schermi").clicked(){
-									self.all_screens(ctx, _frame);
+                                    _frame.set_visible(false);
+                                    self.set_acquire_mode(Some(AcquireMode::AllScreens));
 									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 								};
 								if ui.button("Regione rettangolare").clicked(){
-									self.portion(ctx, _frame);
+                                    _frame.set_visible(false);
+                                    self.set_acquire_mode(Some(AcquireMode::Portion));
 									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 								};
 								if ui.button("Impostazioni").clicked(){

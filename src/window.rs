@@ -29,7 +29,8 @@ pub struct Content {
     encoders : Arc<Mutex<Vec<EncoderThread>>>,
     window_type: WindowType,
     region: Option<Rect>,
-    colorimage: Option<ColorImage>
+    color_image: Option<ColorImage>,
+    acquire_mode : Option<AcquireMode>
 }
 
 impl Content {
@@ -42,9 +43,11 @@ impl Content {
     pub fn set_region(&mut self, region: Rect) {
         self.region = Some(region)
     }
-    pub fn get_colorimage(&self) -> Option<ColorImage> {
-        self.colorimage.clone()
+    pub fn get_color_image(&self) -> Option<ColorImage> {
+        self.color_image.clone()
     }
+    pub fn get_acquire_mode(&self) -> Option<AcquireMode> {self.acquire_mode}
+    pub fn set_acquire_mode(&mut self, am : Option<AcquireMode>) -> () {self.acquire_mode = am}
 
     pub fn current_screen(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
         match self.get_current_screen_di() {
@@ -65,7 +68,7 @@ impl Content {
                     }
                     Err(error) => { error!("{}" , error); }
                 }
-                self.colorimage = None;
+                self.color_image = None;
             }
         }
     }
@@ -98,7 +101,7 @@ impl Content {
             None => {}
         }
 
-        self.colorimage = None;
+        self.color_image = None;
     }
 
     pub fn portion(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
@@ -157,7 +160,7 @@ impl Content {
                     mem.data.insert_temp(Id::from("height"), screenshot.height());
                 });
                 self.set_win_type(Preview);
-                self.colorimage = None;
+                self.color_image = None;
             }
         }
     }
@@ -220,7 +223,7 @@ impl Content {
             }
         }
 
-        let imgf = match self.get_colorimage(){
+        let imgf = match self.get_color_image(){
             Some(img) => ImageFormatter::from(img),
             None => {
                 ctx.memory(|mem|{
@@ -244,7 +247,7 @@ impl Content {
     }
 
     pub fn copy_image(&mut self, ctx: &Context) {
-        match self.get_colorimage(){
+        match self.get_color_image(){
             None => {
                 ctx.memory(|mem|{
                     match mem.data.get_temp::<Vec<u8>>(Id::from("screenshot")){
@@ -317,6 +320,7 @@ impl eframe::App for Content {
     }
 
     fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
+
         if let Some(mut region) = self.region {
             // let colorimage = _frame.screenshot().unwrap().region(&self.region.unwrap(), None);
             //let mut region = self.region.unwrap();
@@ -337,7 +341,7 @@ impl eframe::App for Content {
             colorimage = colorimage.region(&region, None);
 
             self.region = None;
-            self.colorimage = Some(colorimage.clone());
+            self.color_image = Some(colorimage.clone());
             self.set_win_type(Preview);
         }
     }
@@ -373,7 +377,8 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
         encoders,
         window_type: Main,
         region: None,
-        colorimage: None
+        color_image: None,
+        acquire_mode: None,
     };
 
     run_native(

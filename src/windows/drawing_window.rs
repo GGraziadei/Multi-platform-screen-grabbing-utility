@@ -197,7 +197,7 @@ impl Content{
 
         _frame.set_maximized(true);
         
-        let r_image = match self.get_colorimage(){
+        let r_image = match self.get_color_image(){
             Some(r) => {
                 RetainedImage::from_color_image("screenshot", r)
             }

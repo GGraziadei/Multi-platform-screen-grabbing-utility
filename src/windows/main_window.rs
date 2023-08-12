@@ -1,11 +1,36 @@
 use eframe::emath::{Align, Vec2};
 use egui::{CentralPanel, Context, Direction, Frame, Layout, Margin, TopBottomPanel};
+use crate::configuration::AcquireMode;
 use crate::window::{Content};
 use crate::window::WindowType::*;
 
 impl Content {
 	pub fn main_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
     let bg_color = ctx.style().visuals.panel_fill;
+
+        match self.get_acquire_mode() {
+            None => {}
+            Some(am) => {
+                match am {
+                    AcquireMode::CurrentScreen => {
+                        self.set_acquire_mode(None);
+                        self.current_screen(ctx, _frame);
+                    }
+                    AcquireMode::SelectScreen => {
+                        self.set_acquire_mode(None);
+                        self.select_screen(ctx, _frame);
+                    }
+                    AcquireMode::AllScreens => {
+                        self.set_acquire_mode(None);
+                        self.all_screens(ctx, _frame);
+                    }
+                    AcquireMode::Portion => {
+                        self.set_acquire_mode(None);
+                        self.portion(ctx, _frame);
+                    }
+                }
+            }
+        }
 
     _frame.set_decorations(true);
     _frame.set_window_size(Vec2::new(350.0, 300.0));
@@ -32,19 +57,25 @@ impl Content {
             ui.spacing_mut().item_spacing.y = 10.0;
 
             if ui.button("Schermo attuale").clicked(){
-              self.current_screen(ctx, _frame);
+                _frame.set_visible(false);
+                self.set_acquire_mode(Some(AcquireMode::CurrentScreen));
+                //self.current_screen(ctx, _frame);
             };
             if ui.button("Selziona schermo").clicked(){
-              self.select_screen(ctx, _frame);
+                _frame.set_visible(false);
+                self.set_acquire_mode(Some(AcquireMode::SelectScreen));
             };
             if ui.button("Tutti gli schermi").clicked(){
-              self.all_screens(ctx, _frame);
+                _frame.set_visible(false);
+                self.set_acquire_mode(Some(AcquireMode::AllScreens));
+
             };
             if ui.button("Regione rettangolare").clicked(){
-              self.portion(ctx, _frame);
+                _frame.set_visible(false);
+                self.set_acquire_mode(Some(AcquireMode::Portion));
             };
             if ui.button("Impostazioni").clicked(){
-              self.set_win_type(Settings);
+                self.set_win_type(Settings);
             };
           }
         );
