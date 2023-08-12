@@ -3,7 +3,7 @@ use std::default::Default;
 use std::time::Duration;
 use eframe::epaint::Rounding;
 use eframe::Theme;
-use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Stroke, Label, Key};
+use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue, Stroke, Label};
 use egui_extras::RetainedImage;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};

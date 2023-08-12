@@ -1,5 +1,5 @@
 use eframe::epaint::{ColorImage, hex_color, Stroke};
-use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, Key, KeyboardShortcut, LayerId, Layout, Modifiers, Order, pos2, Pos2, Rect, Vec2};
+use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::{Content, };
 use crate::window::WindowType::Preview;

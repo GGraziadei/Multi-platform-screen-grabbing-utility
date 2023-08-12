@@ -43,7 +43,7 @@ impl Content{
             Some(d) => d.clone(),
             None => Vec::<Drawings>::new(),
         };
-        
+
         let drawing_mode = match ctx.memory(|mem| mem.data.get_temp::<DrawingMode>(Id::from("drawing_mode"))){
             Some(d) => d,
             None => DrawingMode::Free,
@@ -360,7 +360,7 @@ impl Content{
             .frame(Frame{inner_margin: Margin::same(0.0), fill: bg_color, ..Default::default()})
             .show(ctx, |ui|{
                 let mut painter = ctx.layer_painter(LayerId::new(Order::Background, Id::from("")));
-        
+
                 let aspect_ratio = r_image.width() as f32 / r_image.height() as f32;
                 let mut width = ui.available_width();
                 let mut height = width / aspect_ratio;
@@ -385,7 +385,7 @@ impl Content{
         
                 painter.set_clip_rect(rect);
                 painter.image(r_image.texture_id(ctx), rect, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
-                
+
                 for d in drawings.iter() {
                     match d.clone(){
                         Line {p1, p2, s} => {
@@ -591,7 +591,7 @@ impl Content{
                                     DrawingMode::Arrow => { drawings.push(Arrow {p: init_pos, v: Vec2::new(mouse_pos.x - init_pos.x, mouse_pos.y - init_pos.y), s: stroke}); }
                                     DrawingMode::Free => {
                                         match drawings.last_mut().unwrap(){
-                                            Free {points, s, complete} => {
+                                            Free {points, s : _, complete} => {
                                                 points.push(mouse_pos);
                                                 *complete = true;
                                             },
