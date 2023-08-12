@@ -138,9 +138,9 @@ impl ScreenshotExecutor{
     pub fn screenshot(&self, di : DisplayInfo, area : Option<CaptureArea> ) -> anyhow::Result<Image>
     {
         /*
-            _frame.set_visible(false) requires about 500ms for the hide frame animation
+            _frame.set_visible(false) requires about 250ms for the hide frame animation
         */
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(250));
 
         /*Each thread can have own sender. MSSR */
         let tx = self.tx.clone();
@@ -167,9 +167,9 @@ impl ScreenshotExecutor{
     pub fn screenshot_all(&self) -> Option<Vec<anyhow::Result<Image>>>
     {
         /*
-            _frame.set_visible(false) requires about 500ms for the hide frame animation
+            _frame.set_visible(false) requires about 250ms for the hide frame animation
         */
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(250));
 
         /*Each thread can have own sender. MSSR */
         let tx = self.tx.clone();
