@@ -145,8 +145,8 @@ impl Content {
         match ImageCombiner::combine(images) {
             None => {
                 error!("Error during image combination.");
-                notifica::notify("Error in screenshot acquisition.", "")
-                    .expect("OS API error.");
+                /* notifica::notify("Error in screenshot acquisition.", "")
+                    .expect("OS API error.");*/
                 return;
             }
             Some(screenshot) => {
@@ -327,8 +327,8 @@ impl eframe::App for Content {
 
             let mut colorimage = match _frame.screenshot(){
                 None => {
-                    notifica::notify("Error in screenshot acquisition.", "")
-                        .expect("OS API error.");
+                    /*notifica::notify("Error in screenshot acquisition.", "")
+                        .expect("OS API error.");*/
                     self.set_win_type(Preview);
                     return;
                 }

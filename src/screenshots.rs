@@ -60,8 +60,10 @@ impl ScreenshotExecutor{
                         let configuration_lock = match configuration.read() {
                             Ok(c) => {c}
                             Err(error) => {
-                                notifica::notify("Error in screenshot acquisition.", &error.to_string())
+                                /*notifica::notify("Error in screenshot acquisition.", &error.to_string())
                                     .expect("OS API error.");
+
+                                 */
                                 continue ;
                             }
                         };
@@ -75,8 +77,8 @@ impl ScreenshotExecutor{
                             let screens = match Screen::all() {
                                 Ok(s) => {s}
                                 Err(error) => {
-                                    notifica::notify("Error in screenshot acquisition.", &error.to_string())
-                                        .expect("OS API error.");
+                                    /*notifica::notify("Error in screenshot acquisition.", &error.to_string())
+                                        .expect("OS API error.");*/
                                     continue;
                                 }
                             };

@@ -47,8 +47,8 @@ impl ImageCombiner {
                     offset +=  i.width() as i64;
                 }
                 Err(error) => {
-                    notifica::notify("Error in screenshot acquisition.", &error.to_string())
-                        .expect("OS API error.");
+                    /*notifica::notify("Error in screenshot acquisition.", &error.to_string())
+                        .expect("OS API error.");*/
                 }
             }
         }

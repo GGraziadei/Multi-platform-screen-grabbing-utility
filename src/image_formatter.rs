@@ -74,8 +74,11 @@ impl ImageFormatter{
                 info!("PNG encoding");
                 let result = image::save_buffer_with_format(p,&formatter.buffer,formatter.width,formatter.height,formatter.color_type,Png);
                 info!("PNG encoding end.");
+                /*
                 notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str())
                     .expect("OS API error.");
+
+                 */
                 result
             }
             Jpeg => {
@@ -85,8 +88,8 @@ impl ImageFormatter{
                 let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(w_buffer, JPEG_QUALITY);
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("JPEG encoding end.");
-                notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str())
-                    .expect("OS API error.");
+                /*notifica::notify("JPEG encoding end.", format!("JPEG encoding end. File available: {}", path.as_str()).as_str())
+                    .expect("OS API error.");*/
                 result
             }
             Gif => {
@@ -102,8 +105,10 @@ impl ImageFormatter{
                 */
                 let result = encoder.encode(&formatter.buffer, formatter.width, formatter.height, formatter.color_type);
                 info!("GIF encoding end.");
-                notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str())
+                /*notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str())
                     .expect("OS API error.");
+
+                 */
                 result
             }
             /*
@@ -155,10 +160,8 @@ impl ImageFormatter{
     pub fn to_clipboard(&self) -> Result<(), arboard::Error>
     {
         let mut cb = Clipboard::new()?;
-        match notifica::notify("Image available in clipboard.", "") {
-            Ok(_) => {}
-            Err(_) => {}
-        }
+        /*notifica::notify("Image available in clipboard.", "")
+            .expect("OS API error. System notification failure.")*/
         cb.set_image(ImageData {
             width: self.width as usize,
             height: self.height as usize,

@@ -164,8 +164,8 @@ impl Content {
 									self.save_image(ctx, path);
 								}
 								Err(error) => {
-									notifica::notify("Error during FileDialog open", &error.to_string())
-										.expect("OS API error.");
+									/*notifica::notify("Error during FileDialog open", &error.to_string())
+										.expect("OS API error.");*/
 								}
 							};
 						}
