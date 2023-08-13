@@ -174,29 +174,23 @@ impl Content {
 						let mut painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("screenshot")));
 						let size_x = ui.available_width();
 						let size_y = ui.available_height();
+						let uv = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
 						let painter_rect = Rect::from_min_size(pos2(margin,window_size.y-size_y - margin), Vec2::new(size_x, size_y));
 						
-						painter.set_clip_rect(painter_rect);
-						// painter.rect_filled(painter_rect, 0.0, Color32::RED);
-
 						if screenshot_ok {
-							let uv_rect = Rect::from_min_max(pos2(0.0,0.0), pos2(1.0,1.0));
-							let image_rect;
-							if r_image.width() > r_image.height(){
-								let image_rect_w = size_x;
-								let image_rect_h = image_rect_w/r_image.width() as f32 * r_image.height() as f32;
-								let start_y = (window_size.y-size_y) - margin;
-								// let start_y = (window_size.y-size_y) - margin;
-								image_rect = Rect::from_min_size(pos2(margin,start_y), Vec2::new(image_rect_w, image_rect_h));
+							painter.set_clip_rect(painter_rect);
+							
+							let aspect_ratio = r_image.width() as f32 / r_image.height() as f32;
+							let mut width = painter_rect.width();
+							let mut height = width / aspect_ratio;
+							
+							if height > painter_rect.height() {
+								height = painter_rect.height();
+								width = height * aspect_ratio;
 							}
-							else {
-								let image_rect_h = size_y;
-								let image_rect_w = image_rect_h/r_image.height() as f32 * r_image.width() as f32;
-								let start_x = margin + (size_x/2.0) - (image_rect_w/2.0);
-								let start_y = (window_size.y-size_y) - margin;
-								image_rect = Rect::from_min_size(pos2(start_x,start_y), Vec2::new(image_rect_w, image_rect_h));
-							}
-							painter.image(r_image.texture_id(ctx), image_rect, uv_rect, Color32::WHITE);
+							
+							let new_rect = Rect::from_min_size(painter_rect.center() - Vec2::new(width/2.0, size_y/2.0), Vec2::new(width, height));
+							painter.image(r_image.texture_id(ctx), new_rect, uv, Color32::WHITE);
 						}
 					}
 				);
