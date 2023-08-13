@@ -1,4 +1,3 @@
-use std::sync::atomic::Ordering::Acquire;
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
