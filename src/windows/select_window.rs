@@ -1,5 +1,5 @@
 use eframe::epaint::{ColorImage, hex_color, Stroke};
-use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, LayerId, Layout, Order, pos2, Pos2, Rect, Vec2};
+use egui::{Align, CentralPanel, Color32, Context, CursorIcon, Id, Key, KeyboardShortcut, LayerId, Layout, Modifiers, Order, pos2, Pos2, Rect, Vec2};
 use egui_extras::RetainedImage;
 use crate::window::{Content, };
 use crate::window::WindowType::Preview;
@@ -7,26 +7,41 @@ use crate::window::WindowType::Preview;
 impl Content{
     pub fn select_window(&mut self, ctx: &Context, _frame: &mut eframe::Frame){
 
+        if ctx.input_mut(|i| {
+            let shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Enter);
+            i.consume_shortcut(&shortcut)
+        }){
+            ctx.memory_mut(|mem|{
+                mem.data.insert_temp(Id::new("visible"), false);
+            });
+        }
+
         CentralPanel::default().show(ctx, |ui| {
             let mut r_image = RetainedImage::from_color_image("", ColorImage::example());
             let window_size: Vec2 = _frame.info().window_info.monitor_size.unwrap();
             let mut screenshot_ok = false;
-            let config = self.configuration.read().unwrap();
             let green = hex_color!("#16A085");
 
-            let region = match config.get_save_region() {
-                true => {
-                    match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("region"))){
-                        Some(r) => {
-                            Some(r)
+            let region = match self.configuration.read(){
+                Ok(config) => {
+                    match config.get_save_region() {
+                        true => {
+                            match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("region"))) {
+                                Some(r) => {
+                                    Some(r)
+                                },
+                                None => {
+                                    config.get_region()
+                                }
+                            }
                         },
-                        None => {
-                            config.get_region()
+                        false => {
+                            None
                         }
                     }
-                },
-                false => {
-                    None
+                }
+                Err(_) => {
+                        panic!("Error. configuration RW lock poisoned.");
                 }
             };
             
@@ -39,8 +54,6 @@ impl Content{
                     true
                 }
             };
-            
-            drop(config);
 
             ctx.memory(|mem|{
                 let mem_image = mem.data.get_temp::<Vec<u8>>(Id::from("bytes"));

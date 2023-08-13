@@ -128,12 +128,30 @@ impl Content{
         
         let icon_size = Vec2::splat(16.0);
 
+        if ctx.input_mut(|i| {
+            let shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Enter);
+            i.consume_shortcut(&shortcut)
+        }){
+            let rect = match ctx.memory(|mem| mem.data.get_temp::<Rect>(Id::from("rect"))){
+                Some(rect) => rect,
+                None => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0))
+            };
+
+            ctx.memory_mut(|mem|{
+                mem.data.remove::<DrawingMode>(Id::from("drawing_mode"));
+                mem.data.remove::<Rgba>(Id::from("color"));
+                mem.data.remove::<f32>(Id::from("thickness"));
+                mem.data.remove::<bool>(Id::from("fill"));
+            });
+            self.set_region(rect);
+            _frame.request_screenshot();
+        }
 
         if ctx.input_mut(|i| {
             let shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
             i.consume_shortcut(&shortcut)
         }){
-            undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+            Self::undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
         }
 
         if ctx.input_mut(|i| {
@@ -141,7 +159,7 @@ impl Content{
             let shortcut_2 = KeyboardShortcut::new(Modifiers {command: true, shift: true, ..Default::default()}, Key::Z);
             i.consume_shortcut(&shortcut_1) || i.consume_shortcut(&shortcut_2)
         }){
-            redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+            Self::redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
         }
         
         if _frame.info().system_theme.is_none() || _frame.info().system_theme.unwrap() == Theme::Dark {
@@ -317,12 +335,12 @@ impl Content{
                     
                     let undo_button = ui.add_enabled(drawings.len() > 0, Button::image_and_text(undo_icon.texture_id(ctx), icon_size, "Annulla"));
                     if undo_button.clicked(){
-                        undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+                        Self::undo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
                     };
 
                     let redo_button = ui.add_enabled(drawings_redo.len() > 0, Button::image_and_text(redo_icon.texture_id(ctx), icon_size, "Rifai"));
                     if redo_button.clicked(){
-                        redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
+                        Self::redo(ctx, drawings.clone(), drawings_redo.clone(), circle_number);
                     };
                     
                     if Button::image_and_text(delete_all_icon.texture_id(ctx), icon_size, "Cancella").ui(ui).clicked(){
@@ -338,7 +356,7 @@ impl Content{
                                 Some(rect) => rect,
                                 None => Rect::from_min_max(pos2(0.0, 0.0), pos2(0.0, 0.0))
                             };
-                            
+
                             ctx.memory_mut(|mem|{
                                 mem.data.remove::<DrawingMode>(Id::from("drawing_mode"));
                                 mem.data.remove::<Rgba>(Id::from("color"));
@@ -616,58 +634,60 @@ impl Content{
                 };
             });
     }
-}
-fn undo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
-    match drawings.last(){
-        Some(d) => {
-            match d {
-                Numbers { .. } => {
-                    redo.push(d.clone());
-                    drawings.pop();
-                    ctx.memory_mut(|mem| {
-                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
-                        mem.data.insert_temp(Id::from("circle_number"), circle_number - 1);
-                    });
-            }
-                _ => {
-                    redo.push(d.clone());
-                    drawings.pop();
-                    ctx.memory_mut(|mem| {
-                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
-                    });
+
+    fn undo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
+        match drawings.last(){
+            Some(d) => {
+                match d {
+                    Numbers { .. } => {
+                        redo.push(d.clone());
+                        drawings.pop();
+                        ctx.memory_mut(|mem| {
+                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                            mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
+                            mem.data.insert_temp(Id::from("circle_number"), circle_number - 1);
+                        });
+                    }
+                    _ => {
+                        redo.push(d.clone());
+                        drawings.pop();
+                        ctx.memory_mut(|mem| {
+                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                            mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
+                        });
+                    }
                 }
-            }
-        },
-        None => ()
+            },
+            None => ()
+        }
+    }
+
+    fn redo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
+        match redo.last(){
+            Some(d) => {
+                match d {
+                    Numbers { .. } => {
+                        drawings.push(d.clone());
+                        redo.pop();
+                        ctx.memory_mut(|mem| {
+                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                            mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
+                            mem.data.insert_temp(Id::from("circle_number"), circle_number + 1);
+                        });
+                    }
+                    _ => {
+                        drawings.push(d.clone());
+                        redo.pop();
+                        ctx.memory_mut(|mem| {
+                            mem.data.insert_temp(Id::from("drawings"), drawings.clone());
+                            mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
+                        });
+                    }
+                }
+            },
+            None => ()
+        }
     }
 }
 
-fn redo (ctx: &Context, mut drawings: Vec<Drawings>, mut redo: Vec<Drawings>, circle_number: u32){
-    match redo.last(){
-        Some(d) => {
-            match d {
-                Numbers { .. } => {
-                    drawings.push(d.clone());
-                    redo.pop();
-                    ctx.memory_mut(|mem| {
-                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone());
-                        mem.data.insert_temp(Id::from("circle_number"), circle_number + 1);
-                    });
-            }
-                _ => {
-                    drawings.push(d.clone());
-                    redo.pop();
-                    ctx.memory_mut(|mem| {
-                        mem.data.insert_temp(Id::from("drawings"), drawings.clone());
-                        mem.data.insert_temp(Id::from("drawings_redo"), redo.clone())
-                    });
-                }
-            }
-        },
-        None => ()
-    }
-}
 

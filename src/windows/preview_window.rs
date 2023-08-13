@@ -15,30 +15,6 @@ impl Content {
 		let mut r_image = RetainedImage::from_color_image("screenshot", ColorImage::example());
 		let mut screenshot_ok = false;
 
-        match self.get_acquire_mode() {
-            None => {}
-            Some(am) => {
-                match am {
-                    AcquireMode::CurrentScreen => {
-                        self.set_acquire_mode(None);
-                        self.current_screen(ctx, _frame);
-                    }
-                    AcquireMode::SelectScreen => {
-                        self.set_acquire_mode(None);
-                        self.select_screen(ctx, _frame);
-                    }
-                    AcquireMode::AllScreens => {
-                        self.set_acquire_mode(None);
-                        self.all_screens(ctx, _frame);
-                    }
-                    AcquireMode::Portion => {
-                        self.set_acquire_mode(None);
-                        self.portion(ctx, _frame);
-                    }
-                }
-            }
-        }
-
 		_frame.set_window_size(Vec2::new(1000.0, 550.0));
 		_frame.set_visible(true);
 		_frame.set_fullscreen(false);

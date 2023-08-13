@@ -273,41 +273,31 @@ impl Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        
-        if self.window_type != Settings && self.window_type != Drawing {
-            let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
-                Some(hkm) => hkm,
-                None => match self.configuration.read(){
-                    Ok(config) => {
-                        if let Some(hkm) = config.get_hot_key_map(){
-                            hkm
-                        }else{
-                            panic!("Configuration poisoned.");
-                        }
+
+        match self.get_acquire_mode() {
+            None => {}
+            Some(am) => {
+                _frame.set_visible(true);
+                self.set_acquire_mode(None);
+
+                match am {
+                    AcquireMode::CurrentScreen => {
+                        self.current_screen(ctx, _frame);
                     }
-                    Err(error) => {
-                        /*Gui thread have to access to configuration file. If it is poisoned panic*/
-                        panic!("{}", error);
+                    AcquireMode::SelectScreen => {
+                        self.select_screen(ctx, _frame);
                     }
-                }
-            };
-    
-            for (am, kc) in hkm {
-                if let Some(k) = kc.k {
-                    let shortcut = KeyboardShortcut::new(kc.m, k);
-                    let mut i = ctx.input(|i| i.clone() );
-                    if i.consume_shortcut(&shortcut){
-                        match am {
-                            AcquireMode::CurrentScreen => {self.current_screen(ctx, _frame)}
-                            AcquireMode::SelectScreen => {self.select_screen(ctx, _frame)}
-                            AcquireMode::AllScreens => {self.all_screens(ctx, _frame)}
-                            AcquireMode::Portion => {self.portion(ctx, _frame)}
-                        }
+                    AcquireMode::AllScreens => {
+                        self.all_screens(ctx, _frame);
+                    }
+                    AcquireMode::Portion => {
+                        self.portion(ctx, _frame);
                     }
                 }
+
+                return;
             }
         }
-        
 
         match self.window_type{
             Main => self.main_window(ctx, _frame),
@@ -316,6 +306,59 @@ impl eframe::App for Content {
             Portion => self.select_window(ctx, _frame),
             SelectScreen => self.select_screen_window(ctx, _frame),
             Drawing => self.drawing_window(ctx, _frame),
+        }
+
+        /*
+            Shortcut :
+                - Preview
+                - Main
+                - Select screen
+        */
+        if self.window_type != Settings
+            && self.window_type != Drawing
+            && self.window_type != Portion
+        {
+            ctx.input(|i| {
+                let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
+                    Some(hkm) => hkm,
+                    None => match self.configuration.read(){
+                        Ok(config) => {
+                            if let Some(hkm) = config.get_hot_key_map(){
+                                hkm
+                            }else{
+                                panic!("Error in keyboard shortcut map access.");
+                            }
+                        }
+                        Err(error) => {
+                            /*Gui thread have to access to configuration file. If it is poisoned panic*/
+                            panic!("{}", error);
+                        }
+                    }
+                };
+
+                for (am, kc) in hkm {
+                    if let Some(k) = kc.k {
+                        if i.clone().consume_shortcut(&KeyboardShortcut::new(kc.m, k)){
+                            _frame.set_visible(false);
+                            match am {
+                                AcquireMode::CurrentScreen => {
+                                    self.set_acquire_mode(Some(AcquireMode::CurrentScreen));
+                                }
+                                AcquireMode::SelectScreen => {
+                                    self.set_acquire_mode(Some(AcquireMode::SelectScreen));
+                                }
+                                AcquireMode::AllScreens => {
+                                    self.set_acquire_mode(Some(AcquireMode::AllScreens));
+                                }
+                                AcquireMode::Portion => {
+                                    self.set_acquire_mode(Some(AcquireMode::Portion));
+                                }
+                            }
+                            return;
+                        }
+                    }
+                }
+            });
         }
     }
 

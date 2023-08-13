@@ -20,7 +20,7 @@ impl ThreadManager{
             ,Arc::new(Mutex::new(Vec::<EncoderThread>::new())))
     }
 
-    pub fn new() -> Self
+    pub fn new() -> ()
     {
 
         let (configuration, encoders) = Self::init();
@@ -32,18 +32,18 @@ impl ThreadManager{
         };
 
         /*GuiThread is mapped over the main thread (ThreadManager)*/
-        GuiThread::new(configuration.clone(), encoders.clone(), screenshot_executor);
+        GuiThread::new(configuration.clone(), encoders, screenshot_executor);
 
-        tm
-    }
+        /*When GuiThread return event loop is closed. ScreenshotExecutor is dropped.
+        thread_executor returns.*/
+        tm.screenshots_executor.thread.join()
+            .expect("Error during screenshots_executor join");
 
-    pub fn join(self) -> ()
-    {
-        let encoders = Arc::try_unwrap(self.encoders)
+        /*Wait all encoder_threads end their work. Without this join if an encoder haven't finished yet
+        its work when main thread will go down also it will go down and the work is not completed.*/
+        let encoders =  Arc::try_unwrap(tm.encoders)
             .expect("Error in encoders access").into_inner()
             .expect("Error in encoders lock");
-
-        let screenshots_executor = self.screenshots_executor;
 
         for e in encoders
         {
@@ -57,11 +57,6 @@ impl ThreadManager{
                 }
             }
         }
-
-        screenshots_executor.thread.join()
-            .expect("Error during screenshots_executor join");
-
         info!("slave threads down");
     }
-
 }

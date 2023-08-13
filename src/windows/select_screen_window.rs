@@ -29,7 +29,8 @@ impl Content {
 		};
 		
 		_frame.set_window_size(Vec2::new(800.0, 500.0));
-		
+		_frame.set_visible(true);
+
 		ctx.memory(|mem|{
 			let res = mem.data.get_temp::<bool>(Id::from("first_render"));
 			if res.is_some() {

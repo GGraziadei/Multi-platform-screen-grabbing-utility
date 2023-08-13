@@ -1,3 +1,3 @@
 use mpsg::thread_manager::ThreadManager;
 
-fn main() { ThreadManager::new().join(); }
+fn main()  { ThreadManager::new() }
