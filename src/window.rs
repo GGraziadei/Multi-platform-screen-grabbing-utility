@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::default::Default;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use eframe::{egui, run_native, Theme};
@@ -171,11 +172,14 @@ impl Content {
                 for display in DisplayInfo::all()
                     .expect("Error in screen list access")
                 {
-                    let new_x = (x as f32/display.scale_factor) as i32;
-                    let new_y = (y as f32/display.scale_factor) as i32;
-                    if new_x > display.x && new_x < display.x + display.width as i32 && new_y > display.y && new_y < display.y + display.height as i32 {
-                        x = new_x;
-                        y = new_y;
+                    match env::consts::OS {
+                        "linux" => {
+                            x = (x as f32/display.scale_factor) as i32;
+                            y = (y as f32/display.scale_factor) as i32;
+                        },
+                        _ => {}
+                    }
+                    if x > display.x && x < display.x + display.width as i32 && y > display.y && y < display.y + display.height as i32 {
                         break;
                     }
                 }
