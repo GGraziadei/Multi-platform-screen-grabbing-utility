@@ -172,8 +172,21 @@ impl Content {
                 for display in DisplayInfo::all()
                     .expect("Error in screen list access")
                 {
-                    if x > display.x && x < display.x + display.width as i32 && y > display.y && y < display.y + display.height as i32 {
-                        break;
+                    match env::consts::OS {
+                        "linux" => {
+                            let new_x = (x as f32/display.scale_factor) as i32;
+                            let new_y = (y as f32/display.scale_factor) as i32;
+                            if new_x > display.x && new_x < display.x + display.width as i32 && new_y > display.y && new_y < display.y + display.height as i32 {
+                                x = new_x;
+                                y = new_y;
+                                break;
+                            }
+                        },
+                        _ => {
+                            if x > display.x && x < display.x + display.width as i32 && y > display.y && y < display.y + display.height as i32 {
+                                break;
+                            }
+                        }
                     }
                 }
                 DisplayInfo::from_point(x, y).ok()
