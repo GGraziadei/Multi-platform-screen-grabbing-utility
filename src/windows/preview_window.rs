@@ -1,3 +1,4 @@
+use std::sync::atomic::Ordering::Acquire;
 use eframe::Theme;
 use egui::{Align, Button, Color32, ColorImage, Context,Frame, Id, LayerId, Layout, Margin, Order, pos2, Rect, RichText, SidePanel, TopBottomPanel, Vec2};
 use egui_extras::RetainedImage;
@@ -19,7 +20,6 @@ impl Content {
 		_frame.set_visible(true);
 		_frame.set_fullscreen(false);
 		_frame.set_decorations(true);
-		//_frame.set_maximized(false);
 
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
 		ctx.memory_mut(|mem| mem.data.remove::<Vec<Drawings>>(Id::from("drawings")));
@@ -236,6 +236,17 @@ impl Content {
 									self.set_win_type(Settings);
 									ctx.memory_mut(|mem| mem.data.remove::<bool>(Id::from("aa_done")));
 								};
+								ui.with_layout(Layout::left_to_right(Align::TOP), |ui|{
+									let config = self.configuration.read().unwrap();
+									match config.get_delay() {
+										Some(d) => {
+											ui.label(format!("Ritardo: {} {}", d.as_secs(), match d.as_secs() { 1 => "secondo", _ => "secondi" }));
+										},
+										_=>{}
+									}
+									if config.get_delay().is_some() {
+									}
+								})
 							}
 						)
 					});
