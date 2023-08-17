@@ -1,4 +1,9 @@
+use std::collections::HashSet;
+use rdev::{listen, Event, EventType, Key};
 use std::sync::{Arc, Mutex, RwLock};
+use std::sync::mpsc::{SendError, sync_channel};
+use std::thread;
+use egui::Key::K;
 use log::{error, info};
 use crate::configuration::Configuration;
 use crate::gui::GuiThread;
@@ -30,9 +35,30 @@ impl ThreadManager{
             encoders: encoders.clone(),
             screenshots_executor: executor_thread,
         };
+        
 
+        let mut keys = HashSet::new();
+        let (tx, rx) = sync_channel::<HashSet<Key>>(1);
+
+        thread::spawn(move || {
+            listen(move |e| {
+                match e.event_type {
+                    EventType::KeyPress(k) => {
+                        keys.insert(k);
+                        match tx.send(keys.clone()){
+                            Ok(_) => {}
+                            Err(e) => { println!("{}", e); }
+                        }
+                    }
+                    EventType::KeyRelease(k) => {
+                        keys.remove(&k);
+                    }
+                    _ => {}
+                }
+            }).expect("TODO: panic message");
+        });
         /*GuiThread is mapped over the main thread (ThreadManager)*/
-        GuiThread::new(configuration.clone(), encoders, screenshot_executor);
+        GuiThread::new(configuration.clone(), encoders, screenshot_executor, rx);
 
         /*When GuiThread return event loop is closed. ScreenshotExecutor is dropped.
         thread_executor returns.*/

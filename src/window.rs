@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::default::Default;
 use std::env;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
+use std::sync::mpsc::{Receiver, RecvError};
+use std::time::Duration;
 use eframe::{egui, run_native, Theme};
 use egui::*;
+use egui::Key::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Backspace, Delete, End, Enter, Escape, Home, Insert, PageDown, PageUp, Space, Tab};
 use log::error;
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
@@ -31,7 +34,8 @@ pub struct Content {
     window_type: WindowType,
     region: Option<Rect>,
     color_image: Option<ColorImage>,
-    acquire_mode : Option<AcquireMode>
+    acquire_mode : Option<AcquireMode>,
+    rx: Receiver<HashSet<rdev::Key>>
 }
 
 impl Content {
@@ -283,6 +287,18 @@ impl Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        _frame.focus();
+        ctx.request_repaint();
+        match self.rx.recv_timeout(Duration::from_millis(1)) {
+            Ok(k) => {
+                println!("{:?}", k);
+                _frame.set_minimized(false);
+                _frame.focus();
+                _frame.set_visible(true);
+            }
+            Err(_) => {
+            }
+        }
 
         match self.get_acquire_mode() {
             None => {}
@@ -400,7 +416,7 @@ impl eframe::App for Content {
     }
 }
 
-pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor){
+pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor, rx: Receiver<HashSet<rdev::Key>>){
 
     let app_name = match configuration.read(){
         Ok(config) => {
@@ -432,6 +448,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
         region: None,
         color_image: None,
         acquire_mode: None,
+        rx
     };
 
     run_native(
