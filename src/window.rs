@@ -287,14 +287,15 @@ impl Content {
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        _frame.focus();
         ctx.request_repaint();
         match self.rx.recv_timeout(Duration::from_millis(1)) {
-            Ok(k) => {
-                println!("{:?}", k);
-                _frame.set_minimized(false);
-                _frame.focus();
-                _frame.set_visible(true);
+            Ok(set) => {
+                if set == HashSet::<rdev::Key>::from([rdev::Key::ControlLeft, rdev::Key::Num1]){
+                    println!("{:?}", set);
+                    _frame.set_minimized(false);
+                    _frame.focus();
+                    _frame.set_visible(true);
+                }
             }
             Err(_) => {
             }
@@ -325,14 +326,17 @@ impl eframe::App for Content {
             }
         }
 
-        match self.window_type{
-            Main => self.main_window(ctx, _frame),
-            Settings => self.settings_window(ctx, _frame),
-            Preview => self.screenshot_window(ctx, _frame),
-            Portion => self.select_window(ctx, _frame),
-            SelectScreen => self.select_screen_window(ctx, _frame),
-            Drawing => self.drawing_window(ctx, _frame),
+        if !_frame.info().window_info.focused{
+            match self.window_type{
+                Main => self.main_window(ctx, _frame),
+                Settings => self.settings_window(ctx, _frame),
+                Preview => self.screenshot_window(ctx, _frame),
+                Portion => self.select_window(ctx, _frame),
+                SelectScreen => self.select_screen_window(ctx, _frame),
+                Drawing => self.drawing_window(ctx, _frame),
+            }
         }
+
 
         /*
             Shortcut :

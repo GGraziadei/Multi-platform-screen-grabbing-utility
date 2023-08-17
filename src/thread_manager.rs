@@ -42,6 +42,7 @@ impl ThreadManager{
 
         thread::spawn(move || {
             listen(move |e| {
+                println!("{:?}", keys);
                 match e.event_type {
                     EventType::KeyPress(k) => {
                         keys.insert(k);
@@ -52,8 +53,14 @@ impl ThreadManager{
                     }
                     EventType::KeyRelease(k) => {
                         keys.remove(&k);
+                        match tx.send(keys.clone()){
+                            Ok(_) => {}
+                            Err(e) => { println!("{}", e); }
+                        }
                     }
-                    _ => {}
+                    _ => {
+                        keys.clear()
+                    }
                 }
             }).expect("TODO: panic message");
         });
