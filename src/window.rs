@@ -1,14 +1,15 @@
-use std::collections::HashMap;
+use std::collections::{HashMap};
 use std::default::Default;
 use std::env;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use eframe::{egui, run_native, Theme};
 use egui::*;
-use log::error;
+use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, hotkey::{HotKey}};
+use log::{error, info};
 use mouse_position::mouse_position::Mouse;
 use screenshots::DisplayInfo;
-use crate::configuration::{AcquireMode, Configuration, ImageFmt, KeyCombo};
+use crate::configuration::{AcquireMode, Configuration, ImageFmt};
 use crate::image_formatter::{EncoderThread, ImageFormatter};
 use crate::screenshots::{ScreenshotExecutor};
 use WindowType::*;
@@ -31,7 +32,9 @@ pub struct Content {
     window_type: WindowType,
     region: Option<Rect>,
     color_image: Option<ColorImage>,
-    acquire_mode : Option<AcquireMode>
+    acquire_mode : Option<AcquireMode>,
+    hot_key_manager : GlobalHotKeyManager,
+    hot_key_enabled : HashMap<AcquireMode,HotKey>
 }
 
 impl Content {
@@ -279,11 +282,61 @@ impl Content {
         }
     }
 
+    pub fn register_hot_keys(&mut self) -> anyhow::Result<()>
+    {
+        for v in self.hot_key_enabled.values()
+        {
+            self.hot_key_manager.unregister(v.clone())
+                .unwrap();
+        }
+        self.hot_key_enabled.clear();
+        let configuration_read = self.configuration.read()
+            .unwrap();
+        let hkm = configuration_read.get_hot_key_map()
+            .unwrap();
+        for (k,v) in hkm{
+            if v.k.is_some(){
+                let hot_key : HotKey = v.into();
+                self.hot_key_manager.register(hot_key.clone())?;
+                self.hot_key_enabled.insert(k, hot_key);
+            }
+        }
+
+        Ok(())
+    }
+
 }
 
 impl eframe::App for Content {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
 
+        /*
+            Shortcut :
+                - Preview
+                - Main
+                - Select screen
+        */
+
+        if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
+            if self.window_type != Settings
+                && self.window_type != Drawing
+                && self.window_type != Portion
+            {
+                info!("{:?} event triggered", event);
+                _frame.focus();
+                _frame.set_minimized(false);
+
+                let mut acquire_mode = None ;
+                for (k,v) in self.hot_key_enabled.iter(){
+                    if v.id() == event.id{
+                        acquire_mode = Some(k.clone());
+                        break;
+                    }
+                };
+                self.set_acquire_mode(acquire_mode);
+            }
+        }
+        ctx.request_repaint();
         match self.get_acquire_mode() {
             None => {}
             Some(am) => {
@@ -318,58 +371,6 @@ impl eframe::App for Content {
             Drawing => self.drawing_window(ctx, _frame),
         }
 
-        /*
-            Shortcut :
-                - Preview
-                - Main
-                - Select screen
-        */
-        if self.window_type != Settings
-            && self.window_type != Drawing
-            && self.window_type != Portion
-        {
-            ctx.input(|i| {
-                let hkm = match ctx.memory(|mem| mem.data.get_temp::<HashMap<AcquireMode, KeyCombo>>(Id::from("hot_key_map"))) {
-                    Some(hkm) => hkm,
-                    None => match self.configuration.read(){
-                        Ok(config) => {
-                            if let Some(hkm) = config.get_hot_key_map(){
-                                hkm
-                            }else{
-                                panic!("Error in keyboard shortcut map access.");
-                            }
-                        }
-                        Err(error) => {
-                            /*Gui thread have to access to configuration file. If it is poisoned panic*/
-                            panic!("{}", error);
-                        }
-                    }
-                };
-
-                for (am, kc) in hkm {
-                    if let Some(k) = kc.k {
-                        if i.clone().consume_shortcut(&KeyboardShortcut::new(kc.m, k)){
-                            _frame.set_visible(false);
-                            match am {
-                                AcquireMode::CurrentScreen => {
-                                    self.set_acquire_mode(Some(AcquireMode::CurrentScreen));
-                                }
-                                AcquireMode::SelectScreen => {
-                                    self.set_acquire_mode(Some(AcquireMode::SelectScreen));
-                                }
-                                AcquireMode::AllScreens => {
-                                    self.set_acquire_mode(Some(AcquireMode::AllScreens));
-                                }
-                                AcquireMode::Portion => {
-                                    self.set_acquire_mode(Some(AcquireMode::Portion));
-                                }
-                            }
-                            return;
-                        }
-                    }
-                }
-            });
-        }
     }
 
     fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {
@@ -398,9 +399,12 @@ impl eframe::App for Content {
             self.set_win_type(Preview);
         }
     }
+
 }
 
 pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mutex<Vec<EncoderThread>>>, s : ScreenshotExecutor){
+
+    let hot_key_manager = GlobalHotKeyManager::new().unwrap();
 
     let app_name = match configuration.read(){
         Ok(config) => {
@@ -424,7 +428,7 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
         ..Default::default()
     };
 
-    let content = Content{
+    let mut content = Content{
         configuration,
         screenshot_executor: s,
         encoders,
@@ -432,7 +436,16 @@ pub fn draw_window(configuration: Arc<RwLock<Configuration>>, encoders: Arc<Mute
         region: None,
         color_image: None,
         acquire_mode: None,
+        hot_key_manager,
+        hot_key_enabled: Default::default(),
     };
+
+    match content.register_hot_keys(){
+        Ok(()) => {}
+        Err(error) => {
+            error!("{}", error);
+        }
+    }
 
     run_native(
         &app_name,

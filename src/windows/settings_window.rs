@@ -4,11 +4,13 @@ use std::time::Duration;
 use eframe::Theme;
 use egui::{Align, Button, Context, Layout, SidePanel, Vec2, Frame, Widget, Margin, hex_color, TopBottomPanel, CentralPanel, Color32, Order, LayerId, Id, RichText, TextEdit, ImageButton, ComboBox, Sense, CursorIcon, DragValue};
 use egui_extras::RetainedImage;
+use log::error;
 use native_dialog::FileDialog;
 use crate::configuration::{AcquireAction, AcquireMode, ImageFmt, KeyCombo};
 use crate::configuration::ImageFmt::{GIF, JPG, PNG};
 use crate::window::Content;
 use crate::window::WindowType::Main;
+use core::option::Option;
 
 #[derive(Clone)]
 enum Tab {
@@ -463,7 +465,7 @@ impl Content {
                                         }
                                         let button_dim = text_edit.rect.height() - 8.0;
                                         if ImageButton::new(icon.texture_id(ctx), Vec2::new(button_dim,button_dim)).ui(ui).clicked(){
-                                            hot_key_map.insert(am, KeyCombo::default());
+                                            hot_key_map.insert(am, KeyCombo::default() );
                                             ctx.memory_mut(|mem|{
                                                 mem.data.insert_temp(Id::from("hot_key_map"), hot_key_map.clone());
                                             })
@@ -503,6 +505,13 @@ impl Content {
                                 }
                             }
 
+                            match self.register_hot_keys(){
+                                Ok(()) => {}
+                                Err(error) => {
+                                    error!("{}", error);
+                                }
+                            }
+
 							self.set_win_type(Main);
 						}
 						if Button::new("Applica").ui(ui).clicked(){
@@ -524,6 +533,12 @@ impl Content {
                                 }
                                 Err(error) => {
                                     panic!("{}", error);
+                                }
+                            }
+                            match self.register_hot_keys(){
+                                Ok(()) => {}
+                                Err(error) => {
+                                    error!("{}", error);
                                 }
                             }
                         }

@@ -6,9 +6,12 @@ use std::hash::Hash;
 use std::io::{Read, Write};
 use std::time::Duration;
 use egui::{Key, Modifiers, Rect};
+use global_hotkey::{ hotkey::{HotKey, Modifiers as Modifiers2}};
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use directories::UserDirs;
+use global_hotkey::hotkey::Code;
+use global_hotkey::hotkey::Code::*;
 use log::info;
 
 const SETTINGS_FILE: &'static str = ".settings.json";
@@ -149,6 +152,113 @@ impl  Display for KeyCombo {
     }
 }
 
+impl Into<HotKey> for KeyCombo {
+    fn into(self) -> HotKey {
+        //try bit codification manually
+        let mut modifiers= Modifiers2::from_bits(0x0).unwrap();
+
+        if self.m.alt{
+            modifiers |= Modifiers2::ALT;
+        }
+
+        if self.m.ctrl{
+            modifiers |= Modifiers2::CONTROL;
+        }
+
+        if self.m.shift{
+            modifiers |= Modifiers2::SHIFT;
+        }
+
+        if self.m.mac_cmd || self.m.command {
+            // disable
+        }
+
+        let code : Code = match self.k {
+            None => {
+                panic!("Error in code shortcut code generation");
+            }
+            Some(code) => {
+                match code {
+                    Key::ArrowDown => {ArrowDown}
+                    Key::ArrowLeft => {ArrowLeft}
+                    Key::ArrowRight => {ArrowRight}
+                    Key::ArrowUp => {ArrowUp}
+                    Key::Escape => {Escape}
+                    Key::Tab => {Tab}
+                    Key::Backspace => {Backspace}
+                    Key::Enter => {Enter}
+                    Key::Space => {Space}
+                    Key::Insert => {Insert}
+                    Key::Delete => {Delete}
+                    Key::Home => {Home}
+                    Key::End => {End}
+                    Key::PageUp => {PageUp}
+                    Key::PageDown => {PageDown}
+                    Key::Minus => {Minus}
+                    Key::PlusEquals => {NumpadAdd}
+                    Key::Num0 => {Digit0}
+                    Key::Num1 => {Digit1}
+                    Key::Num2 => {Digit2}
+                    Key::Num3 => {Digit3}
+                    Key::Num4 => {Digit4}
+                    Key::Num5 => {Digit5}
+                    Key::Num6 => {Digit6}
+                    Key::Num7 => {Digit7}
+                    Key::Num8 => {Digit8}
+                    Key::Num9 => {Digit9}
+                    Key::A => {KeyA}
+                    Key::B => {KeyB}
+                    Key::C => {KeyC}
+                    Key::D => {KeyD}
+                    Key::E => {KeyE}
+                    Key::F => {KeyF}
+                    Key::G => {KeyG}
+                    Key::H => {KeyH}
+                    Key::I => {KeyI}
+                    Key::J => {KeyJ}
+                    Key::K => {KeyK}
+                    Key::L => {KeyL}
+                    Key::M => {KeyM}
+                    Key::N => {KeyN}
+                    Key::O => {KeyO}
+                    Key::P => {KeyP}
+                    Key::Q => {KeyQ}
+                    Key::R => {KeyR}
+                    Key::S => {KeyS}
+                    Key::T => {KeyT}
+                    Key::U => {KeyU}
+                    Key::V => {KeyV}
+                    Key::W => {KeyW}
+                    Key::X => {KeyX}
+                    Key::Y => {KeyY}
+                    Key::Z => {KeyZ}
+                    Key::F1 =>  {F1 }
+                    Key::F2 =>  {F2 }
+                    Key::F3 =>  {F3 }
+                    Key::F4 =>  {F4 }
+                    Key::F5 =>  {F5 }
+                    Key::F6 =>  {F6 }
+                    Key::F7 =>  {F7 }
+                    Key::F8 =>  {F8 }
+                    Key::F9 =>  {F9 }
+                    Key::F10 => {F10}
+                    Key::F11 => {F11}
+                    Key::F12 => {F12}
+                    Key::F13 => {F13}
+                    Key::F14 => {F14}
+                    Key::F15 => {F15}
+                    Key::F16 => {F16}
+                    Key::F17 => {F17}
+                    Key::F18 => {F18}
+                    Key::F19 => {F19}
+                    Key::F20 => {F20}
+                }
+            }
+        };
+        HotKey::new(Some(modifiers), code )
+    }
+}
+
 impl KeyCombo{
 
     pub fn new(modifiers : Modifiers, key: Option<Key>) -> Self
@@ -175,10 +285,11 @@ pub struct Configuration{
     region: Option<Rect>,
     when_capture : AcquireAction,
     delay: Option<Duration>,
-    hot_key_map : HashMap<AcquireMode, KeyCombo>
+    hot_key_map : HashMap<AcquireMode, KeyCombo>,
 }
 
 impl Default for Configuration{
+
     fn default() -> Self {
         Self{
             app_name: "MPSGU".to_string(),
@@ -190,10 +301,10 @@ impl Default for Configuration{
             when_capture: Default::default(),
             delay: None,
             hot_key_map: HashMap::from([
-                (AcquireMode::Portion, KeyCombo::new(Modifiers::default(), None)),
-                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::default(), None)),
-                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::default(), None)),
-                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::default(), None))
+                (AcquireMode::Portion, KeyCombo::new(Modifiers::CTRL, Some(Key::A))),
+                (AcquireMode::AllScreens, KeyCombo::new(Modifiers::CTRL, Some(Key::B))),
+                (AcquireMode::SelectScreen, KeyCombo::new(Modifiers::CTRL, Some(Key::C))),
+                (AcquireMode::CurrentScreen, KeyCombo::new(Modifiers::CTRL, Some(Key::D))),
             ]),
         }
     }
