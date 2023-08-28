@@ -170,7 +170,7 @@ impl Into<HotKey> for KeyCombo {
         }
 
         if self.m.mac_cmd || self.m.command {
-            // disable
+            modifiers |= Modifiers2::SUPER;
         }
 
         let code : Code = match self.k {
